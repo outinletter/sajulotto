@@ -63,32 +63,52 @@
     }
     .chart-box { position: relative; width: 100%; height: 260px; margin: 0 auto; }
     
-    /* 2-A/B 디자인을 계승한 화사한 파스텔톤 입체 북(鼓) 형태의 로또볼 */
+    /* 화사한 파스텔톤 입체 북(鼓) 형태의 로또볼 - 모바일 대응 최적화 */
     .lotto-ball {
         display: flex; align-items: center; justify-content: center;
         position: relative;
-        width: 3.2rem; height: 3.2rem; border-radius: 50%;
+        /* 모바일 기본 크기 축소 */
+        width: 2.45rem; height: 2.45rem; border-radius: 50%;
         /* 우아한 파스텔 크림/로즈골드 그라데이션 테두리 */
         background: radial-gradient(circle, #faedd8 0%, #d4a373 70%, #a27244 100%);
         color: #3A302E;
         font-family: 'Noto Serif KR', serif;
         font-weight: 900;
-        font-size: 1.25rem;
-        box-shadow: 0 5px 12px rgba(90, 69, 21, 0.15), inset 0 1.5px 3px rgba(255, 255, 255, 0.8);
-        border: 2px solid #b28254;
+        font-size: 1rem;
+        box-shadow: 0 3px 8px rgba(90, 69, 21, 0.15), inset 0 1px 2px rgba(255, 255, 255, 0.8);
+        border: 1.5px solid #b28254;
         transition: transform 0.3s ease;
+        flex-shrink: 0; /* 강제로 축소되지 않도록 설정 */
+    }
+
+    /* 화면이 넓어질 때 (태블릿 & 데스크톱) 크기 복원 */
+    @media (min-width: 640px) {
+        .lotto-ball {
+            width: 3.2rem;
+            height: 3.2rem;
+            font-size: 1.25rem;
+            border-width: 2px;
+            box-shadow: 0 5px 12px rgba(90, 69, 21, 0.15), inset 0 1.5px 3px rgba(255, 255, 255, 0.8);
+        }
     }
     
     /* 포근한 실크/한지 가죽면 질감 */
     .lotto-ball::before {
         content: '';
         position: absolute;
-        top: 3px; left: 3px; right: 3px; bottom: 3px;
+        top: 2px; left: 2px; right: 2px; bottom: 2px;
         background: radial-gradient(circle, #ffffff 0%, #faf8f5 70%, #f4ebd9 100%);
         border-radius: 50%;
         border: 1px dashed rgba(178, 130, 84, 0.5); /* 북 스티치 패턴 */
         z-index: 1;
-        box-shadow: inset 0 2px 4px rgba(90, 69, 21, 0.1);
+        box-shadow: inset 0 1px 3px rgba(90, 69, 21, 0.1);
+    }
+
+    @media (min-width: 640px) {
+        .lotto-ball::before {
+            top: 3px; left: 3px; right: 3px; bottom: 3px;
+            box-shadow: inset 0 2px 4px rgba(90, 69, 21, 0.1);
+        }
     }
     
     /* 입체 금속 도트 리벳 장식 */
@@ -97,7 +117,7 @@
         position: absolute;
         top: -1px; left: -1px; right: -1px; bottom: -1px;
         border-radius: 50%;
-        border: 2.5px dotted #fff5e6;
+        border: 2.2px dotted #fff5e6;
         opacity: 0.85;
         z-index: 2;
         pointer-events: none;
@@ -246,29 +266,39 @@
         </div>
 
         <!-- [로또 번호 섹션] -->
-        <section class="glass-card rounded-2xl p-6 text-center">
+        <section class="glass-card rounded-2xl p-4 md:p-6 text-center">
             <h3 class="text-lg font-serif font-bold text-accent mb-1">✨ 토요일 행운의 조합 (5대 세트)</h3>
             <p id="lottoStatusText" class="text-[11px] text-soft/50 mb-6 italic">우주 주파수 융합 중...</p>
-            <div class="space-y-6">
-                <div>
-                    <p class="text-[10px] text-accent/60 font-bold mb-2 tracking-widest uppercase">Set A : 주말 기운 보완형</p>
-                    <div id="numberContainer1" class="flex flex-wrap justify-center items-center gap-2 md:gap-3"></div>
+            
+            <div class="space-y-4 text-left">
+                <!-- Set A 카드 박스 -->
+                <div class="p-4 rounded-xl bg-[#FAF1E6] border border-[#E9D5C3]/60 shadow-sm transition-all hover:shadow-md">
+                    <p class="text-[10px] text-accent/80 font-bold mb-3 tracking-widest uppercase text-center md:text-left">Set A : 주말 기운 보완형 (기운 조화)</p>
+                    <div id="numberContainer1" class="flex flex-nowrap justify-center md:justify-start items-center gap-1.5 md:gap-3 overflow-x-hidden"></div>
                 </div>
-                <div class="pt-4 border-t border-accent/10">
-                    <p class="text-[10px] text-accent/60 font-bold mb-2 tracking-widest uppercase">Set B : 주말 기운 집중형</p>
-                    <div id="numberContainer2" class="flex flex-wrap justify-center items-center gap-2 md:gap-3"></div>
+                
+                <!-- Set B 카드 박스 -->
+                <div class="p-4 rounded-xl bg-[#F0F4EE] border border-[#D5E0D0]/60 shadow-sm transition-all hover:shadow-md">
+                    <p class="text-[10px] text-[#7A8F75] font-bold mb-3 tracking-widest uppercase text-center md:text-left">Set B : 주말 기운 집중형 (목적 성취)</p>
+                    <div id="numberContainer2" class="flex flex-nowrap justify-center md:justify-start items-center gap-1.5 md:gap-3 overflow-x-hidden"></div>
                 </div>
-                <div class="pt-4 border-t border-accent/10">
-                    <p class="text-[10px] text-accent/60 font-bold mb-2 tracking-widest uppercase">Set C : 우주 기류 동조형</p>
-                    <div id="numberContainer3" class="flex flex-wrap justify-center items-center gap-2 md:gap-3"></div>
+                
+                <!-- Set C 카드 박스 -->
+                <div class="p-4 rounded-xl bg-[#EEF2F7] border border-[#D3DFED]/60 shadow-sm transition-all hover:shadow-md">
+                    <p class="text-[10px] text-[#627D9F] font-bold mb-3 tracking-widest uppercase text-center md:text-left">Set C : 우주 기류 동조형 (순수 행운)</p>
+                    <div id="numberContainer3" class="flex flex-nowrap justify-center md:justify-start items-center gap-1.5 md:gap-3 overflow-x-hidden"></div>
                 </div>
-                <div class="pt-4 border-t border-accent/10">
-                    <p class="text-[10px] text-accent/60 font-bold mb-2 tracking-widest uppercase">Set D : 천지 순항 조율형</p>
-                    <div id="numberContainer4" class="flex flex-wrap justify-center items-center gap-2 md:gap-3"></div>
+                
+                <!-- Set D 카드 박스 -->
+                <div class="p-4 rounded-xl bg-[#FAF0F2] border border-[#ECD1D5]/60 shadow-sm transition-all hover:shadow-md">
+                    <p class="text-[10px] text-[#A66F77] font-bold mb-3 tracking-widest uppercase text-center md:text-left">Set D : 천지 순항 조율형 (안정 정합)</p>
+                    <div id="numberContainer4" class="flex flex-nowrap justify-center md:justify-start items-center gap-1.5 md:gap-3 overflow-x-hidden"></div>
                 </div>
-                <div class="pt-4 border-t border-accent/10">
-                    <p class="text-[10px] text-accent/60 font-bold mb-2 tracking-widest uppercase">Set E : 길성 수호 집중형</p>
-                    <div id="numberContainer5" class="flex flex-wrap justify-center items-center gap-2 md:gap-3"></div>
+                
+                <!-- Set E 카드 박스 -->
+                <div class="p-4 rounded-xl bg-[#F6F5F0] border border-[#E1DEC9]/60 shadow-sm transition-all hover:shadow-md">
+                    <p class="text-[10px] text-[#858063] font-bold mb-3 tracking-widest uppercase text-center md:text-left">Set E : 길성 수호 집중형 (천을수호)</p>
+                    <div id="numberContainer5" class="flex flex-nowrap justify-center md:justify-start items-center gap-1.5 md:gap-3 overflow-x-hidden"></div>
                 </div>
             </div>
         </section>
@@ -618,7 +648,7 @@
             },
             {
                 total: `<p><strong>${name}님</strong>은 중후한 대지처럼 만물을 감싸고 기르는 따스한 신뢰의 명식을 타고나셨습니다. 다가오는 토요일의 기운은 귀하의 일진에 숨어있던 기운을 시원하게 소통해 줄 물결과 같아 예기치 못한 활력을 불러일으킵니다.</p>
-                        <p>우주 에너지가 <strong>'수생목(水生木)'</strong>의 상승 궤도를 타게 됨에 따라 맑은 직관이 극대화됩니다. 기교를 부리기보다는 마음에서 처음 일어나는 '순수한 첫 느낌'을 우직하게 지켜낼 때 주말의 기적을 포착하기 수월할 것입니다.</p>`,
+                        <p>우주 에너지가 <strong>'수생목(수생목)'</strong>의 상승 궤도를 타게 됨에 따라 맑은 직관이 극대화됩니다. 기교를 부리기보다는 마음에서 처음 일어나는 '순수한 첫 느낌'을 우직하게 지켜낼 때 주말의 기적을 포착하기 수월할 것입니다.</p>`,
                 wealth: `<p>이번 주말의 재물 주파수는 귀하의 평생 기운 중 <strong>'의외의 귀인력'</strong>과 깊게 교차합니다. 혼자만의 고민보다는 가벼운 친목 속에서 전달되는 우연한 숫자의 계시가 큰 변화의 트리거가 됩니다.</p>
                         <p>오행의 에너지를 아름답게 조율하여 기운을 맑게 다듬은 세트들부터 귀하의 강점을 최대치로 방사한 세트까지 총 5개의 정합 세트 조합이 탄생했습니다. 즐거운 설렘을 안고 귀하의 주말을 완성해 보십시오.</p>`,
                 health: `<p>귀하를 맑게 깨울 이번 토요일의 테라피 행동은 <strong>'나무와 가벼운 풀빛 내음'</strong>을 접하는 것입니다. 가벼운 화초 가꾸기나 산책은 행운 주파수와의 동조율을 비약적으로 가속시킵니다. 행운을 이끄는 매칭 컬러는 <strong>소프트 민트와 세이지 베이지</strong>입니다.</p>
@@ -646,7 +676,7 @@
         
         containers.forEach(c => {
             c.innerHTML = ''; 
-            // 6개의 메인 전통 북 볼만 생성 (보너스 번호 삭제)
+            // 6개의 메인 전통 북 볼만 생성
             for(let i=0; i<6; i++) { 
                 const b = document.createElement('div'); 
                 b.className = 'lotto-ball rolling'; 
@@ -657,6 +687,7 @@
         setTimeout(generateFinalNumbers, 1600);
     }
 
+    // 애니메이션 속도를 아주 여유롭고 깊이 있게(Super Slow Cascade) 조율
     function generateFinalNumbers() {
         const createSet = (off) => {
             const r = mulberry32(currentUserSeed + off); 
@@ -667,7 +698,7 @@
             return Array.from(s).sort((a,b)=>a-b);
         };
 
-        // 5대 세트에 대한 난수 데이터 생성
+        // 5대 세트에 대한 고유 시드 기반 난수 생성
         const sets = [
             createSet(77),
             createSet(88),
@@ -676,20 +707,31 @@
             createSet(222)
         ];
         
-        [1, 2, 3, 4, 5].forEach(idx => {
+        // 아주 천천히 차례대로 순차 진행되도록 딜레이 값 조정
+        const SET_DELAY = 1200; // 각 세트가 오픈되기 시작하는 간격 (1.2초)
+        const BALL_DELAY = 250; // 한 세트 안에서 왼쪽 공부터 오른쪽 공이 열리는 간격 (0.25초)
+
+        [1, 2, 3, 4, 5].forEach((idx) => {
             const container = document.getElementById(`numberContainer${idx}`);
             const balls = container.querySelectorAll('.lotto-ball'); 
             const data = sets[idx-1];
             
-            // 메인 6자리 전통 드럼 순차 오픈
+            // 현재 세트가 굴러가기 시작하는 시간 지연
+            const currentSetStartTime = (idx - 1) * SET_DELAY;
+
             data.forEach((n, i) => {
                 setTimeout(() => { 
                     balls[i].classList.remove('rolling'); 
                     balls[i].innerHTML = `<span>${String(n).padStart(2, '0')}</span>`; 
-                }, i * 150);
+                }, currentSetStartTime + (i * BALL_DELAY));
             });
         });
-        document.getElementById('lottoStatusText').textContent = "천기누설 흐름에 완벽히 동조된 5개 세트의 행운수 조율이 완성되었습니다.";
+
+        // 전체 롤링 완료 선언 시간 조정 (5번째 세트 완료 이후)
+        const totalCompletionTime = (4 * SET_DELAY) + (5 * BALL_DELAY) + 200;
+        setTimeout(() => {
+            document.getElementById('lottoStatusText').textContent = "천기누설 흐름에 완벽히 동조된 5개 세트의 행운수 조율이 완성되었습니다.";
+        }, totalCompletionTime);
     }
 
     function resetInterface() {
