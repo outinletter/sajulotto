@@ -112,22 +112,6 @@
         text-shadow: 1px 1px 0px rgba(255, 255, 255, 0.9);
     }
 
-    /* 보너스 볼 전용 파스텔 로즈/스트로베리 드럼 스타일 */
-    .lotto-ball.bonus-ball {
-        background: radial-gradient(circle, #fcf4f2 0%, #e8a598 70%, #be6c5e 100%);
-        border-color: #be6c5e;
-    }
-    .lotto-ball.bonus-ball::before {
-        background: radial-gradient(circle, #ffffff 0%, #fff6f5 70%, #fcdcd8 100%);
-        border-color: rgba(190, 108, 94, 0.5);
-    }
-    .lotto-ball.bonus-ball::after {
-        border-color: #ffeae6;
-    }
-    .lotto-ball.bonus-ball span {
-        color: #8c3b2e;
-    }
-
     /* 회전 롤링 애니메이션 */
     .lotto-ball.rolling {
         animation: slot 0.12s linear infinite;
@@ -263,16 +247,28 @@
 
         <!-- [로또 번호 섹션] -->
         <section class="glass-card rounded-2xl p-6 text-center">
-            <h3 class="text-lg font-serif font-bold text-accent mb-1">✨ 토요일 행운의 조합</h3>
+            <h3 class="text-lg font-serif font-bold text-accent mb-1">✨ 토요일 행운의 조합 (5대 세트)</h3>
             <p id="lottoStatusText" class="text-[11px] text-soft/50 mb-6 italic">우주 주파수 융합 중...</p>
-            <div class="space-y-8">
+            <div class="space-y-6">
                 <div>
-                    <p class="text-[10px] text-accent/60 font-bold mb-3 tracking-widest uppercase">Set A : 주말 기운 보완형</p>
+                    <p class="text-[10px] text-accent/60 font-bold mb-2 tracking-widest uppercase">Set A : 주말 기운 보완형</p>
                     <div id="numberContainer1" class="flex flex-wrap justify-center items-center gap-2 md:gap-3"></div>
                 </div>
-                <div class="pt-6 border-t border-accent/10">
-                    <p class="text-[10px] text-accent/60 font-bold mb-3 tracking-widest uppercase">Set B : 주말 기운 집중형</p>
+                <div class="pt-4 border-t border-accent/10">
+                    <p class="text-[10px] text-accent/60 font-bold mb-2 tracking-widest uppercase">Set B : 주말 기운 집중형</p>
                     <div id="numberContainer2" class="flex flex-wrap justify-center items-center gap-2 md:gap-3"></div>
+                </div>
+                <div class="pt-4 border-t border-accent/10">
+                    <p class="text-[10px] text-accent/60 font-bold mb-2 tracking-widest uppercase">Set C : 우주 기류 동조형</p>
+                    <div id="numberContainer3" class="flex flex-wrap justify-center items-center gap-2 md:gap-3"></div>
+                </div>
+                <div class="pt-4 border-t border-accent/10">
+                    <p class="text-[10px] text-accent/60 font-bold mb-2 tracking-widest uppercase">Set D : 천지 순항 조율형</p>
+                    <div id="numberContainer4" class="flex flex-wrap justify-center items-center gap-2 md:gap-3"></div>
+                </div>
+                <div class="pt-4 border-t border-accent/10">
+                    <p class="text-[10px] text-accent/60 font-bold mb-2 tracking-widest uppercase">Set E : 길성 수호 집중형</p>
+                    <div id="numberContainer5" class="flex flex-wrap justify-center items-center gap-2 md:gap-3"></div>
                 </div>
             </div>
         </section>
@@ -291,7 +287,7 @@
                     <div class="grid grid-cols-4 gap-1 text-center font-serif">
                         <div class="border-r border-accent/10 last:border-0">
                             <span class="text-soft/60 text-[10px] block mb-2">년주</span>
-                            <span id="saju-year-hanja" class="text-2xl md:text-3xl font-bold text-soft block tracking-wider leading-relaxed">庚<br>午</span>
+                            <span id="saju-year-hanja" class="text-2xl md:text-3xl font-bold text-soft block tracking-wider leading-relaxed">庚<br>오</span>
                             <span id="saju-year-hangul" class="text-[11px] text-accent font-bold mt-2 block">금오</span>
                         </div>
                         <div class="border-r border-accent/10 last:border-0">
@@ -397,7 +393,7 @@
 
     // 전통 간지 한자 및 한글 데이터셋
     const heavenlyStems = ['甲', '乙', '丙', '丁', '戊', '己', '庚', '辛', '壬', '癸'];
-    const earthlyBranches = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥'];
+    const earthlyBranches = ['子', '丑', '寅', '卯', '辰', '巳', '오', '未', '申', '酉', '戌', '亥'];
     const stemKorean = ['갑', '을', '병', '정', '무', '기', '경', '신', '임', '계'];
     const branchKorean = ['자', '축', '인', '묘', '진', '사', '오', '미', '신', '유', '술', '해'];
 
@@ -411,7 +407,7 @@
         return `${targetDate.getFullYear()}년 ${String(targetDate.getMonth() + 1).padStart(2, '0')}월 ${String(targetDate.getDate()).padStart(2, '0')}일`;
     }
 
-    // 시드 생성에 사용할 고유한 날짜 스탬프 (예: "2026-05-23" 형태로 반환하여 주간 단위 시드 변화 유도)
+    // 시드 생성에 사용할 고유한 날짜 스탬프
     function getUpcomingSaturdayISO() {
         const today = new Date();
         const currentDay = today.getDay(); 
@@ -470,7 +466,6 @@
         btn.disabled = true;
         btn.textContent = "우주의 기운을 모으는 중...";
         
-        // 날짜(nextSaturdayISO)를 시드 생성에 융합
         currentUserSeed = generateSeed(name, digitsOnly, time, nextSaturdayISO);
         
         const portal = document.getElementById('inputPortal');
@@ -498,7 +493,7 @@
     // 오행 판정 보조 함수
     function getElementOfCharacter(char) {
         if (['甲', '乙', '寅', '卯'].includes(char)) return 'wood';
-        if (['丙', '丁', '巳', '午'].includes(char)) return 'fire';
+        if (['丙', '丁', '巳', '오'].includes(char)) return 'fire';
         if (['戊', '己', '辰', '戌', '丑', '未'].includes(char)) return 'earth';
         if (['庚', '辛', '申', '酉'].includes(char)) return 'metal';
         if (['壬', '癸', '亥', '子'].includes(char)) return 'water';
@@ -512,7 +507,6 @@
         
         const rng = mulberry32(currentUserSeed);
         
-        // 1. 토요일 날짜가 포함된 고유 시드로 매주 달라지는 사주 8자 산출
         const yStemIdx = currentUserSeed % 10;
         const yBranchIdx = (currentUserSeed + 6) % 12;
         
@@ -587,7 +581,7 @@
                 labels: ['목(木)', '화(火)', '토(土)', '금(金)', '수(水)'],
                 datasets: [{
                     data: data,
-                    backgroundColor: 'rgba(212, 163, 115, 0.2)', // 파스텔 테마 연동 바이어스
+                    backgroundColor: 'rgba(212, 163, 115, 0.2)',
                     borderColor: '#D4A373',
                     borderWidth: 2,
                     pointBackgroundColor: '#D4A373',
@@ -613,27 +607,25 @@
     }
 
     function writeInsights(name, rng) {
-        // 매주 시드가 달라짐에 따라 생성 텍스트의 변동성과 깊이를 유도하는 파스텔 풍의 명리 문장 매칭
         const dynamicAspects = [
             {
                 total: `<p><strong>${name}님</strong>은 한겨울 얼어붙은 땅에 생기를 채우는 '봄의 서막'과도 같은 수호 에너지를 품고 있습니다. 명리학적으로 분석한 다가오는 토요일의 일진은 천간과 지지가 조화롭게 흘러 막힌 기류를 청량하게 정화하는 형국입니다.</p>
                         <p>이번 주 ${name}님의 원국과 토요일 천문 운행은 <strong>'금생수(金生水)'</strong>의 조화가 긴밀해집니다. 지나친 과욕을 조절하고 마음의 여유를 가질 때 횡재를 이끄는 직관력이 최상의 상태로 고조될 것입니다.</p>`,
                 wealth: `<p>재물 에너지의 활성도가 이번 주 토요일 오후 2시에서 6시 사이에 최고조에 이릅니다. 사주 명식 속 감추어진 <strong>숨은 편재(偏財)의 별</strong>이 힘을 얻으면서 소소한 거래나 가벼운 모험에서 기쁜 반전이 유도되는 기적 같은 흐름입니다.</p>
-                        <p>추천해 드린 로또 번호는 금주의 약세 오행을 매끄럽게 교화하는 <strong>Set A</strong>와, 주말의 수호 기류를 집중 방사하는 <strong>Set B</strong>로 완벽 설계되었습니다. 편안하게 토요일 오후 행운을 맞이해 보십시오.</p>`,
+                        <p>추천해 드린 로또 번호는 매주 변화하는 운율과 오행 조화에 맞추어 보완형부터 고정형까지 우주의 수호 기류를 담아 5개의 고유한 조합 세트로 정교하게 설계되었습니다.</p>`,
                 health: `<p>다가오는 토요일 ${name}님께 가장 길한 에너지는 <strong>'토(土)와 수(水)의 안정'</strong>입니다. 따뜻한 허브차 한 잔으로 목의 긴장을 풀어주는 조율 행위가 행운 수치를 강화합니다. 추천 행운 색상은 <strong>라벤더 블루와 부드러운 살구색</strong>입니다.</p>
-                        <p>이 색상들을 소품이나 의상에 자연스럽게 가미하시면, 주변의 사악한 기운을 분쇄하고 대자연의 우호적인 기를 품 안으로 록온(Lock-on)시킬 수 있을 것입니다.</p>`
+                        <p>이 색상들을 소품이나 의상에 자연스럽게 가미하시면, 주변의 사악한 기운을 분쇄하고 대자연의 우호적인 기를 품 안으로 안정적으로 조율할 수 있을 것입니다.</p>`
             },
             {
                 total: `<p><strong>${name}님</strong>은 중후한 대지처럼 만물을 감싸고 기르는 따스한 신뢰의 명식을 타고나셨습니다. 다가오는 토요일의 기운은 귀하의 일진에 숨어있던 기운을 시원하게 소통해 줄 물결과 같아 예기치 못한 활력을 불러일으킵니다.</p>
                         <p>우주 에너지가 <strong>'수생목(水生木)'</strong>의 상승 궤도를 타게 됨에 따라 맑은 직관이 극대화됩니다. 기교를 부리기보다는 마음에서 처음 일어나는 '순수한 첫 느낌'을 우직하게 지켜낼 때 주말의 기적을 포착하기 수월할 것입니다.</p>`,
                 wealth: `<p>이번 주말의 재물 주파수는 귀하의 평생 기운 중 <strong>'의외의 귀인력'</strong>과 깊게 교차합니다. 혼자만의 고민보다는 가벼운 친목 속에서 전달되는 우연한 숫자의 계시가 큰 변화의 트리거가 됩니다.</p>
-                        <p>오행의 에너지를 아름답게 조율하여 기운을 맑게 다듬은 **Set A**와 귀하의 강점인 화(火)의 팽창력을 전방위로 방사한 **Set B**의 조합이 탄생했습니다. 즐거운 설렘을 안고 귀하의 주말을 완성해 보십시오.</p>`,
+                        <p>오행의 에너지를 아름답게 조율하여 기운을 맑게 다듬은 세트들부터 귀하의 강점을 최대치로 방사한 세트까지 총 5개의 정합 세트 조합이 탄생했습니다. 즐거운 설렘을 안고 귀하의 주말을 완성해 보십시오.</p>`,
                 health: `<p>귀하를 맑게 깨울 이번 토요일의 테라피 행동은 <strong>'나무와 가벼운 풀빛 내음'</strong>을 접하는 것입니다. 가벼운 화초 가꾸기나 산책은 행운 주파수와의 동조율을 비약적으로 가속시킵니다. 행운을 이끄는 매칭 컬러는 <strong>소프트 민트와 세이지 베이지</strong>입니다.</p>
                         <p>가벼운 산책길에 편안한 마음으로 전방의 기류를 느껴보신다면 행운이 한층 더 굳건하게 당겨질 것입니다.</p>`
             }
         ];
 
-        // 시드 기반으로 인덱스를 분기하여 토요일마다 완전 다른 텍스트 풀이를 제공
         const textIdx = currentUserSeed % dynamicAspects.length;
         const activeInsight = dynamicAspects[textIdx];
 
@@ -644,26 +636,23 @@
 
     // 전통 북/공예 롤링 이펙트 구현
     function startLottoRollingAnimation() {
-        [document.getElementById('numberContainer1'), document.getElementById('numberContainer2')].forEach(c => {
+        const containers = [
+            document.getElementById('numberContainer1'),
+            document.getElementById('numberContainer2'),
+            document.getElementById('numberContainer3'),
+            document.getElementById('numberContainer4'),
+            document.getElementById('numberContainer5')
+        ];
+        
+        containers.forEach(c => {
             c.innerHTML = ''; 
-            // 6개의 메인 전통 북 볼 생성
+            // 6개의 메인 전통 북 볼만 생성 (보너스 번호 삭제)
             for(let i=0; i<6; i++) { 
                 const b = document.createElement('div'); 
                 b.className = 'lotto-ball rolling'; 
                 b.innerHTML = '<span>?</span>'; 
                 c.appendChild(b); 
             }
-            // 플러스 기호 테코레이터
-            const plus = document.createElement('div');
-            plus.className = 'text-accent/60 font-serif font-black text-xl px-1.5 md:px-2.5 select-none';
-            plus.textContent = '+';
-            c.appendChild(plus);
-
-            // 1개의 보너스 벚꽃 북 볼 생성
-            const bonus = document.createElement('div');
-            bonus.className = 'lotto-ball bonus-ball rolling';
-            bonus.innerHTML = '<span>?</span>';
-            c.appendChild(bonus);
         });
         setTimeout(generateFinalNumbers, 1600);
     }
@@ -672,38 +661,35 @@
         const createSet = (off) => {
             const r = mulberry32(currentUserSeed + off); 
             const s = new Set();
-            while(s.size < 7) {
+            while(s.size < 6) {
                 s.add(Math.floor(r() * 45) + 1);
             }
-            const arr = Array.from(s);
-            const mainNumbers = arr.slice(0, 6).sort((a,b)=>a-b);
-            const bonusNumber = arr[6];
-            return { mainNumbers, bonusNumber };
+            return Array.from(s).sort((a,b)=>a-b);
         };
 
-        const sets = [createSet(77), createSet(88)];
+        // 5대 세트에 대한 난수 데이터 생성
+        const sets = [
+            createSet(77),
+            createSet(88),
+            createSet(99),
+            createSet(111),
+            createSet(222)
+        ];
         
-        [1, 2].forEach(idx => {
+        [1, 2, 3, 4, 5].forEach(idx => {
             const container = document.getElementById(`numberContainer${idx}`);
             const balls = container.querySelectorAll('.lotto-ball'); 
             const data = sets[idx-1];
             
             // 메인 6자리 전통 드럼 순차 오픈
-            data.mainNumbers.forEach((n, i) => {
+            data.forEach((n, i) => {
                 setTimeout(() => { 
                     balls[i].classList.remove('rolling'); 
                     balls[i].innerHTML = `<span>${String(n).padStart(2, '0')}</span>`; 
                 }, i * 150);
             });
-            
-            // 보너스볼 마지막 극적 오픈 효과
-            setTimeout(() => {
-                const bonusBall = balls[6];
-                bonusBall.classList.remove('rolling');
-                bonusBall.innerHTML = `<span>${String(data.bonusNumber).padStart(2, '0')}</span>`;
-            }, 6 * 150);
         });
-        document.getElementById('lottoStatusText').textContent = "천기누설 흐름에 완벽히 동조된 로또 행운수 조율이 완성되었습니다.";
+        document.getElementById('lottoStatusText').textContent = "천기누설 흐름에 완벽히 동조된 5개 세트의 행운수 조율이 완성되었습니다.";
     }
 
     function resetInterface() {
