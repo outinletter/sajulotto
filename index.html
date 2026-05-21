@@ -13,10 +13,12 @@
         theme: {
             extend: {
                 colors: {
-                    primary: '#1A1B41',
-                    secondary: '#7A5C91',
-                    accent: '#D4AF37',
-                    soft: '#F3E5D8',
+                    primary: '#FAF7F2',    /* 포근하고 따뜻한 미색 한지 톤 */
+                    secondary: '#A1B5D0',  /* 차분한 파스텔 블루 */
+                    accent: '#D4A373',     /* 고급스러운 파스텔 로즈골드/우드 톤 */
+                    soft: '#3A302E',       /* 가독성 높은 부드러운 다크 웜그레이 */
+                    pastelGreen: '#CCD5AE',/* 파스텔 세이지 그린 */
+                    pastelRose: '#E8A598', /* 사랑스러운 파스텔 로즈 */
                 },
                 fontFamily: {
                     serif: ['"Noto Serif KR"', 'serif'],
@@ -28,11 +30,11 @@
                 keyframes: {
                     float: {
                         '0%, 100%': { transform: 'translateY(0px)' },
-                        '50%': { transform: 'translateY(-10px)' },
+                        '50%': { transform: 'translateY(-8px)' },
                     },
                     slot: {
-                        '0%': { transform: 'translateY(-5px)', opacity: 0.5 },
-                        '100%': { transform: 'translateY(5px)', opacity: 0.8 },
+                        '0%': { transform: 'translateY(-4px)', opacity: 0.6 },
+                        '100%': { transform: 'translateY(4px)', opacity: 0.9 },
                     }
                 }
             }
@@ -42,44 +44,122 @@
 <style>
     * { -webkit-tap-highlight-color: transparent; scroll-behavior: smooth; }
     body {
-        background-color: #1A1B41;
-        color: #F3E5D8;
+        background-color: #FAF7F2;
+        color: #3A302E;
+        /* 은은하고 화사한 오프화이트 파스텔 한지 질감 그라데이션 */
         background-image: 
-            radial-gradient(circle at 50% 0%, rgba(122, 92, 145, 0.2) 0%, transparent 70%),
-            radial-gradient(circle at 50% 100%, rgba(212, 175, 55, 0.1) 0%, transparent 70%);
+            radial-gradient(circle at 50% 0%, rgba(224, 204, 190, 0.35) 0%, transparent 60%),
+            radial-gradient(circle at 100% 100%, rgba(161, 181, 208, 0.2) 0%, transparent 50%),
+            url('https://www.transparenttextures.com/patterns/papyrous.png');
         background-attachment: fixed;
         word-break: keep-all;
     }
     .glass-card {
-        background: rgba(26, 27, 65, 0.85);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border: 1px solid rgba(212, 175, 55, 0.2);
+        background: rgba(255, 255, 255, 0.75);
+        backdrop-filter: blur(15px);
+        -webkit-backdrop-filter: blur(15px);
+        border: 1px solid rgba(212, 163, 115, 0.3);
+        box-shadow: 0 10px 30px rgba(58, 48, 46, 0.05);
     }
-    .chart-box { position: relative; width: 100%; height: 300px; margin: 0 auto; }
+    .chart-box { position: relative; width: 100%; height: 260px; margin: 0 auto; }
+    
+    /* 2-A/B 디자인을 계승한 화사한 파스텔톤 입체 북(鼓) 형태의 로또볼 */
     .lotto-ball {
         display: flex; align-items: center; justify-content: center;
-        width: 2.8rem; height: 2.8rem; border-radius: 50%;
-        background: radial-gradient(circle at 30% 30%, #F3E5D8 0%, #D4AF37 40%, #8B6508 100%);
-        color: #1A1B41; font-weight: 900; font-size: 1.1rem;
-        box-shadow: 0 3px 8px rgba(0,0,0,0.4);
+        position: relative;
+        width: 3.2rem; height: 3.2rem; border-radius: 50%;
+        /* 우아한 파스텔 크림/로즈골드 그라데이션 테두리 */
+        background: radial-gradient(circle, #faedd8 0%, #d4a373 70%, #a27244 100%);
+        color: #3A302E;
+        font-family: 'Noto Serif KR', serif;
+        font-weight: 900;
+        font-size: 1.25rem;
+        box-shadow: 0 5px 12px rgba(90, 69, 21, 0.15), inset 0 1.5px 3px rgba(255, 255, 255, 0.8);
+        border: 2px solid #b28254;
+        transition: transform 0.3s ease;
     }
+    
+    /* 포근한 실크/한지 가죽면 질감 */
+    .lotto-ball::before {
+        content: '';
+        position: absolute;
+        top: 3px; left: 3px; right: 3px; bottom: 3px;
+        background: radial-gradient(circle, #ffffff 0%, #faf8f5 70%, #f4ebd9 100%);
+        border-radius: 50%;
+        border: 1px dashed rgba(178, 130, 84, 0.5); /* 북 스티치 패턴 */
+        z-index: 1;
+        box-shadow: inset 0 2px 4px rgba(90, 69, 21, 0.1);
+    }
+    
+    /* 입체 금속 도트 리벳 장식 */
+    .lotto-ball::after {
+        content: '';
+        position: absolute;
+        top: -1px; left: -1px; right: -1px; bottom: -1px;
+        border-radius: 50%;
+        border: 2.5px dotted #fff5e6;
+        opacity: 0.85;
+        z-index: 2;
+        pointer-events: none;
+    }
+
+    .lotto-ball span {
+        position: relative;
+        z-index: 3;
+        font-family: 'Noto Serif KR', serif;
+        font-weight: 900;
+        color: #2f2523;
+        text-shadow: 1px 1px 0px rgba(255, 255, 255, 0.9);
+    }
+
+    /* 보너스 볼 전용 파스텔 로즈/스트로베리 드럼 스타일 */
+    .lotto-ball.bonus-ball {
+        background: radial-gradient(circle, #fcf4f2 0%, #e8a598 70%, #be6c5e 100%);
+        border-color: #be6c5e;
+    }
+    .lotto-ball.bonus-ball::before {
+        background: radial-gradient(circle, #ffffff 0%, #fff6f5 70%, #fcdcd8 100%);
+        border-color: rgba(190, 108, 94, 0.5);
+    }
+    .lotto-ball.bonus-ball::after {
+        border-color: #ffeae6;
+    }
+    .lotto-ball.bonus-ball span {
+        color: #8c3b2e;
+    }
+
+    /* 회전 롤링 애니메이션 */
     .lotto-ball.rolling {
         animation: slot 0.12s linear infinite;
-        background: radial-gradient(circle at 30% 30%, #4A4B71 0%, #1A1B41 100%);
-        color: #D4AF37; box-shadow: none;
+        background: radial-gradient(circle, #f0e6df 0%, #cfb8aa 100%);
+        border-color: #a89487;
     }
+    
+    .lotto-ball.rolling::before {
+        background: #f7ede8;
+        border: 1px dashed rgba(178, 130, 84, 0.3);
+    }
+    
+    .lotto-ball.rolling::after {
+        border-color: #e5d2c4;
+    }
+
+    .lotto-ball.rolling span {
+        color: #a2897a;
+        text-shadow: none;
+    }
+
     .input-field {
-        background: rgba(10, 11, 30, 0.6);
-        border: 1px solid rgba(212, 175, 55, 0.3);
-        color: #F3E5D8;
+        background: rgba(255, 255, 255, 0.65);
+        border: 1px solid rgba(212, 163, 115, 0.4);
+        color: #3A302E;
         font-size: 16px !important;
         transition: all 0.3s ease;
     }
     .input-field:focus {
-        border-color: #D4AF37;
-        background: rgba(26, 27, 65, 0.9);
-        box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2);
+        border-color: #D4A373;
+        background: rgba(255, 255, 255, 0.95);
+        box-shadow: 0 0 0 3px rgba(212, 163, 115, 0.15);
         outline: none;
     }
     .select-wrapper { position: relative; }
@@ -89,11 +169,11 @@
         right: 1rem;
         top: 50%;
         transform: translateY(-50%);
-        color: #D4AF37;
+        color: #D4A373;
         font-size: 0.7rem;
         pointer-events: none;
     }
-    select option { background-color: #1A1B41; color: #F3E5D8; padding: 10px; }
+    select option { background-color: #FAF7F2; color: #3A302E; padding: 10px; }
 </style>
 </head>
 <body class="font-sans antialiased min-h-screen relative overflow-x-hidden">
@@ -101,49 +181,48 @@
 <div class="max-w-4xl mx-auto px-5 py-8 md:py-16 relative z-10">
 
     <header class="text-center mb-10 animate-float-slow">
-        <p class="text-accent font-serif tracking-[0.2em] text-xs mb-2">✧ 천 기 누 설 ✧</p>
+        <p class="text-accent font-serif tracking-[0.2em] text-xs mb-2 font-bold">✧ 천 기 누 설 ✧</p>
         <h1 class="text-3xl md:text-5xl font-serif font-black text-soft mb-4 tracking-tight">사주와 로또의 만남</h1>
-        <p class="text-soft/70 font-light text-sm md:text-lg leading-relaxed px-2">
-            다가오는 <strong id="headerSaturday" class="text-accent underline underline-offset-4">토요일</strong>의 최적 번호를 도출합니다.
+        <p class="text-soft/80 font-light text-sm md:text-lg leading-relaxed px-2">
+            다가오는 <strong id="headerSaturday" class="text-accent underline underline-offset-4 font-bold">토요일</strong>의 최적 번호를 도출합니다.
         </p>
     </header>
 
     <!-- [입력 단계] -->
     <section id="inputPortal" class="glass-card rounded-2xl p-6 md:p-10 transition-all duration-500">
-        <!-- 신규 추가: 사주 기반 번호 생성 안내 문구 -->
         <div class="mb-8 p-4 rounded-xl bg-accent/5 border border-accent/20 text-center">
-            <p class="text-accent text-sm font-bold mb-1">⚠️ 단 한 번의 천기누설</p>
-            <p class="text-soft/60 text-xs leading-relaxed">
-                본 서비스는 사용자의 사주 오행과 당일의 우주 기운을 결합하여 분석합니다.<br>
-                <span class="text-accent/80 font-medium">해당 일자에는 단 한 번의 조합만이 도출</span>되오니, 경건한 마음으로 확인해 주시기 바랍니다.
+            <p class="text-accent text-sm font-bold mb-1">⚠️ 주간 단 한 번의 천기누설</p>
+            <p class="text-soft/80 text-xs leading-relaxed">
+                본 서비스는 귀하의 평생 사주 원국과 <span class="text-accent font-bold">매주 달라지는 토요일의 운세 흐름</span>을 결합합니다.<br>
+                매주 토요일마다 분석 결과와 행운 번호가 새롭게 갱신되오니 정성껏 확인해 주십시오.
             </p>
         </div>
 
         <div class="text-center mb-6">
             <h2 class="text-xl font-serif font-bold text-accent mb-1">운명의 정보 입력</h2>
-            <p class="text-soft/50 text-xs font-light">정확한 생시를 입력할수록 분석이 정교해집니다.</p>
+            <p class="text-soft/60 text-xs font-light">태어난 시각과 정보를 정확히 조율할수록 하늘의 맥박과 더 일치합니다.</p>
         </div>
         <form id="destinyForm" class="space-y-5">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                    <label class="block text-[11px] font-bold text-accent/70 mb-1.5 uppercase tracking-wider">성함 (선택)</label>
-                    <input type="text" id="inputName" class="input-field w-full px-4 py-3.5 rounded-xl placeholder-soft/20" placeholder="미입력시 '익명'으로 분석">
+                    <label class="block text-[11px] font-bold text-accent/80 mb-1.5 uppercase tracking-wider">성함 (선택)</label>
+                    <input type="text" id="inputName" class="input-field w-full px-4 py-3.5 rounded-xl placeholder-soft/30" placeholder="미입력시 '익명'으로 분석">
                 </div>
                 <div>
-                    <label class="block text-[11px] font-bold text-accent/70 mb-1.5 uppercase tracking-wider">성별</label>
+                    <label class="block text-[11px] font-bold text-accent/80 mb-1.5 uppercase tracking-wider">성별</label>
                     <div class="flex gap-3">
-                        <label class="flex-1 flex items-center justify-center gap-2 cursor-pointer input-field py-3.5 rounded-xl"><input type="radio" name="gender" value="M" checked class="accent-accent"> <span class="text-sm">남성</span></label>
-                        <label class="flex-1 flex items-center justify-center gap-2 cursor-pointer input-field py-3.5 rounded-xl"><input type="radio" name="gender" value="F" class="accent-accent"> <span class="text-sm">여성</span></label>
+                        <label class="flex-1 flex items-center justify-center gap-2 cursor-pointer input-field py-3.5 rounded-xl"><input type="radio" name="gender" value="M" checked class="accent-accent"> <span class="text-sm font-medium">남성</span></label>
+                        <label class="flex-1 flex items-center justify-center gap-2 cursor-pointer input-field py-3.5 rounded-xl"><input type="radio" name="gender" value="F" class="accent-accent"> <span class="text-sm font-medium">여성</span></label>
                     </div>
                 </div>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                    <label class="block text-[11px] font-bold text-accent/70 mb-1.5 uppercase tracking-wider">생년월일 (8자리)</label>
-                    <input type="text" id="inputBirth" required maxlength="10" inputmode="numeric" class="input-field w-full px-4 py-3.5 rounded-xl placeholder-soft/20" placeholder="예: 19950512">
+                    <label class="block text-[11px] font-bold text-accent/80 mb-1.5 uppercase tracking-wider">생년월일 (8자리)</label>
+                    <input type="text" id="inputBirth" required maxlength="10" inputmode="numeric" class="input-field w-full px-4 py-3.5 rounded-xl placeholder-soft/30" placeholder="예: 19950512">
                 </div>
                 <div>
-                    <label class="block text-[11px] font-bold text-accent/70 mb-1.5 uppercase tracking-wider">태어난 시 (Time)</label>
+                    <label class="block text-[11px] font-bold text-accent/80 mb-1.5 uppercase tracking-wider">태어난 시 (Time)</label>
                     <div class="select-wrapper">
                         <select id="inputTime" class="input-field w-full px-4 py-3.5 rounded-xl appearance-none cursor-pointer font-medium">
                             <option value="unknown">태어난 시간 모름</option>
@@ -163,76 +242,148 @@
                     </div>
                 </div>
             </div>
-            <button type="submit" id="submitBtn" class="w-full mt-4 bg-gradient-to-br from-accent to-[#b89848] text-primary font-bold text-lg py-4 rounded-xl active:scale-[0.98] transition-transform shadow-lg shadow-accent/20">분석 및 번호 생성 ☯</button>
+            <button type="submit" id="submitBtn" class="w-full mt-4 bg-gradient-to-br from-accent to-[#c3915f] text-white font-bold text-lg py-4 rounded-xl active:scale-[0.98] transition-all shadow-md shadow-accent/20">분석 및 번호 생성 ☯</button>
         </form>
     </section>
 
     <div id="loadingState" class="hidden text-center py-16 flex-col items-center justify-center">
         <div class="text-5xl text-accent animate-spin mb-6" style="animation-duration: 3s;">☯</div>
-        <h3 class="text-xl font-serif text-soft mb-2">운명의 흐름을 계산하는 중...</h3>
-        <div class="max-w-[200px] w-full mx-auto h-[3px] bg-white/10 rounded-full mt-6 overflow-hidden">
+        <h3 class="text-xl font-serif text-soft mb-2 font-bold">주간 운명의 흐름을 튜닝하는 중...</h3>
+        <p class="text-xs text-soft/60">다가오는 토요일의 우주 전파를 동기화하고 있습니다.</p>
+        <div class="max-w-[200px] w-full mx-auto h-[3px] bg-soft/10 rounded-full mt-6 overflow-hidden">
             <div id="progressBar" class="h-full bg-accent transition-all duration-100 ease-linear" style="width: 0%"></div>
         </div>
     </div>
 
     <main id="dashboard" class="hidden opacity-0 transition-opacity duration-1000 space-y-6">
-        <div class="text-center py-4 border-b border-accent/10">
+        <div class="text-center py-4 border-b border-accent/15">
             <h2 class="text-2xl font-serif font-bold text-soft"><span id="displayUser" class="text-accent"></span>님의 행운 보고서</h2>
-            <p class="text-xs text-soft/50 mt-1 uppercase tracking-widest">Lucky Report for <span id="saturdayDate"></span></p>
+            <p class="text-xs text-soft/60 mt-1 uppercase tracking-widest font-bold">Lucky Report for <span id="saturdayDate" class="text-accent"></span></p>
         </div>
 
         <!-- [로또 번호 섹션] -->
         <section class="glass-card rounded-2xl p-6 text-center">
-            <h3 class="text-lg font-serif font-bold text-accent mb-1">✨ 행운의 조합</h3>
-            <p id="lottoStatusText" class="text-[11px] text-soft/40 mb-6 italic">번호 산출 중...</p>
+            <h3 class="text-lg font-serif font-bold text-accent mb-1">✨ 토요일 행운의 조합</h3>
+            <p id="lottoStatusText" class="text-[11px] text-soft/50 mb-6 italic">우주 주파수 융합 중...</p>
             <div class="space-y-8">
-                <div><p class="text-[10px] text-accent/40 font-bold mb-3 tracking-widest uppercase">Set A : 기운 보완형</p><div id="numberContainer1" class="flex flex-wrap justify-center gap-2.5"></div></div>
-                <div class="pt-6 border-t border-white/5"><p class="text-[10px] text-accent/40 font-bold mb-3 tracking-widest uppercase">Set B : 기운 집중형</p><div id="numberContainer2" class="flex flex-wrap justify-center gap-2.5"></div></div>
+                <div>
+                    <p class="text-[10px] text-accent/60 font-bold mb-3 tracking-widest uppercase">Set A : 주말 기운 보완형</p>
+                    <div id="numberContainer1" class="flex flex-wrap justify-center items-center gap-2 md:gap-3"></div>
+                </div>
+                <div class="pt-6 border-t border-accent/10">
+                    <p class="text-[10px] text-accent/60 font-bold mb-3 tracking-widest uppercase">Set B : 주말 기운 집중형</p>
+                    <div id="numberContainer2" class="flex flex-wrap justify-center items-center gap-2 md:gap-3"></div>
+                </div>
             </div>
         </section>
 
-        <div class="grid grid-cols-1 gap-6">
+        <!-- [사주 명식 결과 및 오행 분포 분석] -->
+        <section class="glass-card rounded-2xl p-6 md:p-8">
+            <div class="text-center mb-6">
+                <h3 class="text-md font-serif font-bold text-accent uppercase tracking-widest mb-1">☯ 사주 명식 & 오행 분포</h3>
+                <p class="text-soft/60 text-[10px]">입력하신 생년월일시와 토요일 일진의 하모니</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
+                <!-- 사주 분석 결과 (4기둥 수직 서체) -->
+                <div class="bg-white/40 p-5 rounded-xl border border-accent/20 flex flex-col justify-between shadow-inner">
+                    <p class="text-accent text-[10px] font-bold text-center uppercase tracking-wider mb-4">운명 명식 분석 (四柱)</p>
+                    <div class="grid grid-cols-4 gap-1 text-center font-serif">
+                        <div class="border-r border-accent/10 last:border-0">
+                            <span class="text-soft/60 text-[10px] block mb-2">년주</span>
+                            <span id="saju-year-hanja" class="text-2xl md:text-3xl font-bold text-soft block tracking-wider leading-relaxed">庚<br>午</span>
+                            <span id="saju-year-hangul" class="text-[11px] text-accent font-bold mt-2 block">금오</span>
+                        </div>
+                        <div class="border-r border-accent/10 last:border-0">
+                            <span class="text-soft/60 text-[10px] block mb-2">월주</span>
+                            <span id="saju-month-hanja" class="text-2xl md:text-3xl font-bold text-soft block tracking-wider leading-relaxed">辛<br>巳</span>
+                            <span id="saju-month-hangul" class="text-[11px] text-accent font-bold mt-2 block">신사</span>
+                        </div>
+                        <div class="border-r border-accent/10 last:border-0">
+                            <span class="text-soft/60 text-[10px] block mb-2">일주</span>
+                            <span id="saju-day-hanja" class="text-2xl md:text-3xl font-bold text-soft block tracking-wider leading-relaxed">戊<br>戌</span>
+                            <span id="saju-day-hangul" class="text-[11px] text-accent font-bold mt-2 block">무술</span>
+                        </div>
+                        <div>
+                            <span class="text-soft/60 text-[10px] block mb-2">시주</span>
+                            <span id="saju-hour-hanja" class="text-2xl md:text-3xl font-bold text-soft block tracking-wider leading-relaxed">壬<br>辰</span>
+                            <span id="saju-hour-hangul" class="text-[11px] text-accent font-bold mt-2 block">임진</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 오행 분포도 (Colored Circles) -->
+                <div class="bg-white/40 p-5 rounded-xl border border-accent/20 flex flex-col justify-between shadow-inner">
+                    <p class="text-accent text-[10px] font-bold text-center uppercase tracking-wider mb-4">기류 오행 에너지 (五행)</p>
+                    <div class="flex justify-around items-center py-2">
+                        <div class="text-center">
+                            <div class="w-9 h-9 rounded-full bg-[#6B8E23] text-white flex items-center justify-center font-bold text-sm mx-auto shadow-sm border border-white/40">木</div>
+                            <span id="dist-wood" class="text-sm font-bold text-soft block mt-2">0</span>
+                        </div>
+                        <div class="text-center">
+                            <div class="w-9 h-9 rounded-full bg-[#E07A5F] text-white flex items-center justify-center font-bold text-sm mx-auto shadow-sm border border-white/40">火</div>
+                            <span id="dist-fire" class="text-sm font-bold text-soft block mt-2">0</span>
+                        </div>
+                        <div class="text-center">
+                            <div class="w-9 h-9 rounded-full bg-[#D4A373] text-white flex items-center justify-center font-bold text-sm mx-auto shadow-sm border border-white/40">土</div>
+                            <span id="dist-earth" class="text-sm font-bold text-soft block mt-2">0</span>
+                        </div>
+                        <div class="text-center">
+                            <div class="w-9 h-9 rounded-full bg-[#A8A29E] text-white flex items-center justify-center font-bold text-sm mx-auto shadow-sm border border-white/40">金</div>
+                            <span id="dist-metal" class="text-sm font-bold text-soft block mt-2">0</span>
+                        </div>
+                        <div class="text-center">
+                            <div class="w-9 h-9 rounded-full bg-[#8CA4D8] text-white flex items-center justify-center font-bold text-sm mx-auto shadow-sm border border-white/40">水</div>
+                            <span id="dist-water" class="text-sm font-bold text-soft block mt-2">0</span>
+                        </div>
+                    </div>
+                    <p class="text-[10px] text-soft/60 text-center mt-3">※ 사주 원국과 금주 일진의 상호 보완 비율</p>
+                </div>
+            </div>
+        </section>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <!-- [차트 섹션] -->
             <section class="glass-card rounded-2xl p-6">
-                <h3 class="text-md font-serif font-bold text-accent mb-4 text-center">📊 오행(五行) 분석도</h3>
+                <h3 class="text-md font-serif font-bold text-accent mb-4 text-center">📊 금주 오행 기운 하모니도</h3>
                 <div class="chart-box">
                     <canvas id="sajuRadarChart"></canvas>
                 </div>
             </section>
             
             <!-- [상세 해설 섹션] -->
-            <section class="glass-card rounded-2xl p-6 md:p-8">
+            <section class="glass-card rounded-2xl p-6">
                 <h3 class="text-md font-serif font-bold text-accent mb-6 flex items-center justify-center gap-2">
-                    📖 <span class="targetSaturday"></span> 운세 심층 해설
+                    📖 <span class="targetSaturday"></span> 토요일 운세 기류 해설
                 </h3>
-                <div class="space-y-8" id="insightContainer">
-                    <div class="insight-card p-6 rounded-2xl bg-white/[0.03] border border-white/5">
-                        <h4 class="text-accent text-sm font-bold mb-4 flex items-center gap-2">
-                            <span class="w-6 h-6 flex items-center justify-center bg-accent/20 rounded-full text-[10px]">🌟</span> 
-                            타고난 성향과 오늘의 기운
+                <div class="space-y-4" id="insightContainer">
+                    <div class="insight-card p-4 rounded-xl bg-white/50 border border-accent/10 shadow-sm">
+                        <h4 class="text-accent text-xs font-bold mb-2 flex items-center gap-2">
+                            <span class="w-5 h-5 flex items-center justify-center bg-accent/20 rounded-full text-[9px]">🌟</span> 
+                            타고난 천성 및 다가오는 토요일의 기류
                         </h4>
-                        <div id="insight-total" class="text-soft/80 leading-relaxed text-[15px] text-justify space-y-4"></div>
+                        <div id="insight-total" class="text-soft/90 leading-relaxed text-[13px] text-justify space-y-2"></div>
                     </div>
-                    <div class="insight-card p-6 rounded-2xl bg-white/[0.03] border border-white/5">
-                        <h4 class="text-accent text-sm font-bold mb-4 flex items-center gap-2">
-                            <span class="w-6 h-6 flex items-center justify-center bg-accent/20 rounded-full text-[10px]">💰</span> 
-                            금전운과 행운의 타이밍
+                    <div class="insight-card p-4 rounded-xl bg-white/50 border border-accent/10 shadow-sm">
+                        <h4 class="text-accent text-xs font-bold mb-2 flex items-center gap-2">
+                            <span class="w-5 h-5 flex items-center justify-center bg-accent/20 rounded-full text-[9px]">💰</span> 
+                            주말 재물운 및 최적의 구매 타이밍
                         </h4>
-                        <div id="insight-wealth" class="text-soft/80 leading-relaxed text-[15px] text-justify space-y-4"></div>
+                        <div id="insight-wealth" class="text-soft/90 leading-relaxed text-[13px] text-justify space-y-2"></div>
                     </div>
-                    <div class="insight-card p-6 rounded-2xl bg-white/[0.03] border border-white/5">
-                        <h4 class="text-accent text-sm font-bold mb-4 flex items-center gap-2">
-                            <span class="w-6 h-6 flex items-center justify-center bg-accent/20 rounded-full text-[10px]">🍀</span> 
-                            일상 속 행운 가이드
+                    <div class="insight-card p-4 rounded-xl bg-white/50 border border-accent/10 shadow-sm">
+                        <h4 class="text-accent text-xs font-bold mb-2 flex items-center gap-2">
+                            <span class="w-5 h-5 flex items-center justify-center bg-accent/20 rounded-full text-[9px]">🍀</span> 
+                            기운을 부르는 일상 행동 가이드
                         </h4>
-                        <div id="insight-health" class="text-soft/80 leading-relaxed text-[15px] text-justify space-y-4"></div>
+                        <div id="insight-health" class="text-soft/90 leading-relaxed text-[13px] text-justify space-y-2"></div>
                     </div>
                 </div>
             </section>
         </div>
 
         <div class="text-center pt-8 pb-4">
-            <button onclick="resetInterface()" class="px-8 py-3 rounded-full border border-accent/30 text-accent font-medium text-sm hover:bg-accent/10 active:scale-95 transition-all">
+            <button onclick="resetInterface()" class="px-8 py-3 rounded-full border border-accent/40 text-accent font-medium text-sm hover:bg-accent/10 active:scale-95 transition-all">
                 ← 다시 분석하기
             </button>
         </div>
@@ -244,6 +395,13 @@
     let currentUserSeed = 0;
     const ANIMATION_DURATION = 2000;
 
+    // 전통 간지 한자 및 한글 데이터셋
+    const heavenlyStems = ['甲', '乙', '丙', '丁', '戊', '己', '庚', '辛', '壬', '癸'];
+    const earthlyBranches = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥'];
+    const stemKorean = ['갑', '을', '병', '정', '무', '기', '경', '신', '임', '계'];
+    const branchKorean = ['자', '축', '인', '묘', '진', '사', '오', '미', '신', '유', '술', '해'];
+
+    // 다가오는 토요일 날짜 계산 함수
     function getUpcomingSaturday() {
         const today = new Date();
         const currentDay = today.getDay(); 
@@ -253,7 +411,19 @@
         return `${targetDate.getFullYear()}년 ${String(targetDate.getMonth() + 1).padStart(2, '0')}월 ${String(targetDate.getDate()).padStart(2, '0')}일`;
     }
 
+    // 시드 생성에 사용할 고유한 날짜 스탬프 (예: "2026-05-23" 형태로 반환하여 주간 단위 시드 변화 유도)
+    function getUpcomingSaturdayISO() {
+        const today = new Date();
+        const currentDay = today.getDay(); 
+        let distanceToSaturday = 6 - currentDay;
+        const targetDate = new Date(today);
+        targetDate.setDate(today.getDate() + distanceToSaturday);
+        return `${targetDate.getFullYear()}-${String(targetDate.getMonth() + 1).padStart(2, '0')}-${String(targetDate.getDate()).padStart(2, '0')}`;
+    }
+
     const nextSaturdayDate = getUpcomingSaturday();
+    const nextSaturdayISO = getUpcomingSaturdayISO();
+    
     document.getElementById('headerSaturday').textContent = nextSaturdayDate;
     document.querySelectorAll('.targetSaturday').forEach(el => el.textContent = nextSaturdayDate);
 
@@ -264,8 +434,9 @@
         }
     }
 
-    function generateSeed(name, birth, time) {
-        let str = name + birth + time; 
+    // 주간 토요일 날짜 정보를 시드 공식에 포함하여 매주 결과가 유동적으로 변하게 수정
+    function generateSeed(name, birth, time, saturdayISO) {
+        let str = name + birth + time + saturdayISO; 
         let hash = 0;
         for (let i = 0; i < str.length; i++) { 
             hash = ((hash << 5) - hash) + str.charCodeAt(i); 
@@ -298,7 +469,10 @@
         const btn = document.getElementById('submitBtn');
         btn.disabled = true;
         btn.textContent = "우주의 기운을 모으는 중...";
-        currentUserSeed = generateSeed(name, digitsOnly, time);
+        
+        // 날짜(nextSaturdayISO)를 시드 생성에 융합
+        currentUserSeed = generateSeed(name, digitsOnly, time, nextSaturdayISO);
+        
         const portal = document.getElementById('inputPortal');
         portal.classList.add('opacity-0', 'scale-95');
         setTimeout(() => {
@@ -314,23 +488,90 @@
                     requestAnimationFrame(animate);
                 } else { 
                     document.getElementById('loadingState').classList.replace('flex', 'hidden'); 
-                    buildDashboard(name); 
+                    buildDashboard(name, time); 
                 }
             }
             requestAnimationFrame(animate);
         }, 400);
     });
 
-    function buildDashboard(name) {
+    // 오행 판정 보조 함수
+    function getElementOfCharacter(char) {
+        if (['甲', '乙', '寅', '卯'].includes(char)) return 'wood';
+        if (['丙', '丁', '巳', '午'].includes(char)) return 'fire';
+        if (['戊', '己', '辰', '戌', '丑', '未'].includes(char)) return 'earth';
+        if (['庚', '辛', '申', '酉'].includes(char)) return 'metal';
+        if (['壬', '癸', '亥', '子'].includes(char)) return 'water';
+        return 'earth';
+    }
+
+    function buildDashboard(name, timeVal) {
         const dash = document.getElementById('dashboard');
         document.getElementById('displayUser').textContent = name;
         document.getElementById('saturdayDate').textContent = nextSaturdayDate;
+        
         const rng = mulberry32(currentUserSeed);
-        const sajuData = Array.from({length: 5}, () => Math.floor(rng() * 40) + 50);
+        
+        // 1. 토요일 날짜가 포함된 고유 시드로 매주 달라지는 사주 8자 산출
+        const yStemIdx = currentUserSeed % 10;
+        const yBranchIdx = (currentUserSeed + 6) % 12;
+        
+        const mStemIdx = (currentUserSeed * 3 + 7) % 10;
+        const mBranchIdx = (currentUserSeed * 2 + 5) % 12;
+        
+        const dStemIdx = (currentUserSeed * 7 + 4) % 10;
+        const dBranchIdx = (currentUserSeed * 5 + 10) % 12;
+        
+        let hStemIdx = (currentUserSeed * 9 + 2) % 10;
+        let hBranchIdx = timeVal === 'unknown' ? (currentUserSeed % 12) : parseInt(timeVal);
+
+        const pillars = [
+            { stem: heavenlyStems[yStemIdx], branch: earthlyBranches[yBranchIdx], stH: stemKorean[yStemIdx], brH: branchKorean[yBranchIdx] },
+            { stem: heavenlyStems[mStemIdx], branch: earthlyBranches[mBranchIdx], stH: stemKorean[mStemIdx], brH: branchKorean[mBranchIdx] },
+            { stem: heavenlyStems[dStemIdx], branch: earthlyBranches[dBranchIdx], stH: stemKorean[dStemIdx], brH: branchKorean[dBranchIdx] },
+            { stem: heavenlyStems[hStemIdx], branch: earthlyBranches[hBranchIdx], stH: stemKorean[hStemIdx], brH: branchKorean[hBranchIdx] }
+        ];
+
+        // UI에 사주 명식 출력
+        document.getElementById('saju-year-hanja').innerHTML = `${pillars[0].stem}<br>${pillars[0].branch}`;
+        document.getElementById('saju-year-hangul').textContent = `${pillars[0].stH}${pillars[0].brH}`;
+
+        document.getElementById('saju-month-hanja').innerHTML = `${pillars[1].stem}<br>${pillars[1].branch}`;
+        document.getElementById('saju-month-hangul').textContent = `${pillars[1].stH}${pillars[1].brH}`;
+
+        document.getElementById('saju-day-hanja').innerHTML = `${pillars[2].stem}<br>${pillars[2].branch}`;
+        document.getElementById('saju-day-hangul').textContent = `${pillars[2].stH}${pillars[2].brH}`;
+
+        document.getElementById('saju-hour-hanja').innerHTML = `${pillars[3].stem}<br>${pillars[3].branch}`;
+        document.getElementById('saju-hour-hangul').textContent = `${pillars[3].stH}${pillars[3].brH}`;
+
+        // 8자 오행 분포 계산
+        const distribution = { wood: 0, fire: 0, earth: 0, metal: 0, water: 0 };
+        pillars.forEach(p => {
+            distribution[getElementOfCharacter(p.stem)]++;
+            distribution[getElementOfCharacter(p.branch)]++;
+        });
+
+        // 오행 분포 뷰 적용
+        document.getElementById('dist-wood').textContent = distribution.wood;
+        document.getElementById('dist-fire').textContent = distribution.fire;
+        document.getElementById('dist-earth').textContent = distribution.earth;
+        document.getElementById('dist-metal').textContent = distribution.metal;
+        document.getElementById('dist-water').textContent = distribution.water;
+
+        // 레이더 차트용 데이터 보정
+        const sajuChartData = [
+            Math.max(distribution.wood * 12.5 + 10, 15),
+            Math.max(distribution.fire * 12.5 + 10, 15),
+            Math.max(distribution.earth * 12.5 + 10, 15),
+            Math.max(distribution.metal * 12.5 + 10, 15),
+            Math.max(distribution.water * 12.5 + 10, 15)
+        ];
+
         dash.classList.remove('hidden');
         setTimeout(() => {
             dash.classList.add('opacity-100');
-            drawRadarChart(sajuData);
+            drawRadarChart(sajuChartData);
             startLottoRollingAnimation();
             writeInsights(name, rng);
             window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -346,10 +587,13 @@
                 labels: ['목(木)', '화(火)', '토(土)', '금(金)', '수(水)'],
                 datasets: [{
                     data: data,
-                    backgroundColor: 'rgba(212, 175, 55, 0.2)',
-                    borderColor: '#D4AF37',
+                    backgroundColor: 'rgba(212, 163, 115, 0.2)', // 파스텔 테마 연동 바이어스
+                    borderColor: '#D4A373',
                     borderWidth: 2,
-                    pointBackgroundColor: '#D4AF37'
+                    pointBackgroundColor: '#D4A373',
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: '#D4A373'
                 }]
             },
             options: {
@@ -358,9 +602,9 @@
                 scales: {
                     r: {
                         min: 0, max: 100, ticks: { display: false },
-                        grid: { color: 'rgba(243, 229, 216, 0.1)' },
-                        angleLines: { color: 'rgba(243, 229, 216, 0.1)' },
-                        pointLabels: { color: '#F3E5D8', font: { size: 14 } }
+                        grid: { color: 'rgba(58, 48, 46, 0.08)' },
+                        angleLines: { color: 'rgba(58, 48, 46, 0.08)' },
+                        pointLabels: { color: '#3A302E', font: { size: 14, family: 'Noto Sans KR', weight: 'bold' } }
                     }
                 },
                 plugins: { legend: { display: false } }
@@ -369,57 +613,97 @@
     }
 
     function writeInsights(name, rng) {
-        const totalText = [
-            `<p><strong>${name}님</strong>은 통찰력이 뛰어나며 결심한 바를 끝까지 완수하는 <strong>강인한 의지</strong>를 지니셨습니다. 명리학적 관점에서 오늘 ${name}님의 운세는 봄비에 싹을 틔우는 대지와 같아, 내면의 아이디어가 실질적 성과로 전환되는 중요한 기점에 서 있습니다.</p>`,
-            `<p>현재 오행의 흐름상 '목(木)'과 '화(火)'의 조화가 두드러지며, 당신의 열정이 주변에 긍정적인 파급력을 미치게 됩니다. 완벽주의보다는 <strong>'여유와 수용'</strong>의 태도로 직관을 믿고 나아갈 때 더 큰 기회가 찾아올 것입니다.</p>`
-        ].join("");
+        // 매주 시드가 달라짐에 따라 생성 텍스트의 변동성과 깊이를 유도하는 파스텔 풍의 명리 문장 매칭
+        const dynamicAspects = [
+            {
+                total: `<p><strong>${name}님</strong>은 한겨울 얼어붙은 땅에 생기를 채우는 '봄의 서막'과도 같은 수호 에너지를 품고 있습니다. 명리학적으로 분석한 다가오는 토요일의 일진은 천간과 지지가 조화롭게 흘러 막힌 기류를 청량하게 정화하는 형국입니다.</p>
+                        <p>이번 주 ${name}님의 원국과 토요일 천문 운행은 <strong>'금생수(金生水)'</strong>의 조화가 긴밀해집니다. 지나친 과욕을 조절하고 마음의 여유를 가질 때 횡재를 이끄는 직관력이 최상의 상태로 고조될 것입니다.</p>`,
+                wealth: `<p>재물 에너지의 활성도가 이번 주 토요일 오후 2시에서 6시 사이에 최고조에 이릅니다. 사주 명식 속 감추어진 <strong>숨은 편재(偏財)의 별</strong>이 힘을 얻으면서 소소한 거래나 가벼운 모험에서 기쁜 반전이 유도되는 기적 같은 흐름입니다.</p>
+                        <p>추천해 드린 로또 번호는 금주의 약세 오행을 매끄럽게 교화하는 <strong>Set A</strong>와, 주말의 수호 기류를 집중 방사하는 <strong>Set B</strong>로 완벽 설계되었습니다. 편안하게 토요일 오후 행운을 맞이해 보십시오.</p>`,
+                health: `<p>다가오는 토요일 ${name}님께 가장 길한 에너지는 <strong>'토(土)와 수(水)의 안정'</strong>입니다. 따뜻한 허브차 한 잔으로 목의 긴장을 풀어주는 조율 행위가 행운 수치를 강화합니다. 추천 행운 색상은 <strong>라벤더 블루와 부드러운 살구색</strong>입니다.</p>
+                        <p>이 색상들을 소품이나 의상에 자연스럽게 가미하시면, 주변의 사악한 기운을 분쇄하고 대자연의 우호적인 기를 품 안으로 록온(Lock-on)시킬 수 있을 것입니다.</p>`
+            },
+            {
+                total: `<p><strong>${name}님</strong>은 중후한 대지처럼 만물을 감싸고 기르는 따스한 신뢰의 명식을 타고나셨습니다. 다가오는 토요일의 기운은 귀하의 일진에 숨어있던 기운을 시원하게 소통해 줄 물결과 같아 예기치 못한 활력을 불러일으킵니다.</p>
+                        <p>우주 에너지가 <strong>'수생목(水生木)'</strong>의 상승 궤도를 타게 됨에 따라 맑은 직관이 극대화됩니다. 기교를 부리기보다는 마음에서 처음 일어나는 '순수한 첫 느낌'을 우직하게 지켜낼 때 주말의 기적을 포착하기 수월할 것입니다.</p>`,
+                wealth: `<p>이번 주말의 재물 주파수는 귀하의 평생 기운 중 <strong>'의외의 귀인력'</strong>과 깊게 교차합니다. 혼자만의 고민보다는 가벼운 친목 속에서 전달되는 우연한 숫자의 계시가 큰 변화의 트리거가 됩니다.</p>
+                        <p>오행의 에너지를 아름답게 조율하여 기운을 맑게 다듬은 **Set A**와 귀하의 강점인 화(火)의 팽창력을 전방위로 방사한 **Set B**의 조합이 탄생했습니다. 즐거운 설렘을 안고 귀하의 주말을 완성해 보십시오.</p>`,
+                health: `<p>귀하를 맑게 깨울 이번 토요일의 테라피 행동은 <strong>'나무와 가벼운 풀빛 내음'</strong>을 접하는 것입니다. 가벼운 화초 가꾸기나 산책은 행운 주파수와의 동조율을 비약적으로 가속시킵니다. 행운을 이끄는 매칭 컬러는 <strong>소프트 민트와 세이지 베이지</strong>입니다.</p>
+                        <p>가벼운 산책길에 편안한 마음으로 전방의 기류를 느껴보신다면 행운이 한층 더 굳건하게 당겨질 것입니다.</p>`
+            }
+        ];
 
-        const wealthText = [
-            `<p>재물운에 있어 오늘은 <strong>'수확의 기쁨'</strong>을 누리는 시기입니다. 그간의 신용과 노력이 물질적 보상으로 전환되는 흐름이 강합니다. 특히 주변 지인으로부터 전달되는 정보가 예상치 못한 수익의 발판이 될 수 있으니, 경청하는 자세가 행운의 열쇠가 될 것입니다.</p>`,
-            `<p>다만 안정성을 기반으로 한 기운이므로 무리한 투자는 피하는 것이 좋습니다. 추천된 로또 번호는 당신의 선천적 기운과 금전운이 교차하는 지점에서 추출된 것이니 즐거운 마음으로 활용해 보세요. 오후 3시에서 7시 사이, 서쪽에서 오는 기운이 금전적 활력을 더해주어 풍요로운 흐름을 완성할 것입니다.</p>`
-        ].join("");
+        // 시드 기반으로 인덱스를 분기하여 토요일마다 완전 다른 텍스트 풀이를 제공
+        const textIdx = currentUserSeed % dynamicAspects.length;
+        const activeInsight = dynamicAspects[textIdx];
 
-        const healthText = [
-            `<p>오늘 ${name}님께 가장 필요한 에너지는 <strong>'물(水)'의 순환</strong>입니다. 아침의 미온수 한 잔과 명상은 창의적 에너지를 깨우는 활력소가 됩니다. 행운을 부르는 색상은 깊은 신뢰를 상징하는 <strong>네이비와 황금색</strong>이며, 작은 소품으로 포인트를 주는 것만으로도 나쁜 기운을 정화하고 길운을 유도할 수 있습니다.</p>`,
-            `<p>식단으로는 제철 채소와 해산물을 추천하며, 자극적인 음식보다는 담백한 음식이 운을 맑게 유지해 줍니다. 잠들기 전 스스로에게 건네는 칭찬은 다음 날의 행운을 예약하는 강력한 주문이 됩니다. 우주는 이미 당신을 위해 최선의 선물을 준비하고 있으니 긍정적인 마음으로 주말의 기적을 맞이하십시오.</p>`
-        ].join("");
-
-        document.getElementById('insight-total').innerHTML = totalText;
-        document.getElementById('insight-wealth').innerHTML = wealthText;
-        document.getElementById('insight-health').innerHTML = healthText;
+        document.getElementById('insight-total').innerHTML = activeInsight.total;
+        document.getElementById('insight-wealth').innerHTML = activeInsight.wealth;
+        document.getElementById('insight-health').innerHTML = activeInsight.health;
     }
 
+    // 전통 북/공예 롤링 이펙트 구현
     function startLottoRollingAnimation() {
         [document.getElementById('numberContainer1'), document.getElementById('numberContainer2')].forEach(c => {
             c.innerHTML = ''; 
+            // 6개의 메인 전통 북 볼 생성
             for(let i=0; i<6; i++) { 
                 const b = document.createElement('div'); 
                 b.className = 'lotto-ball rolling'; 
-                b.textContent = '?'; 
+                b.innerHTML = '<span>?</span>'; 
                 c.appendChild(b); 
             }
+            // 플러스 기호 테코레이터
+            const plus = document.createElement('div');
+            plus.className = 'text-accent/60 font-serif font-black text-xl px-1.5 md:px-2.5 select-none';
+            plus.textContent = '+';
+            c.appendChild(plus);
+
+            // 1개의 보너스 벚꽃 북 볼 생성
+            const bonus = document.createElement('div');
+            bonus.className = 'lotto-ball bonus-ball rolling';
+            bonus.innerHTML = '<span>?</span>';
+            c.appendChild(bonus);
         });
-        setTimeout(generateFinalNumbers, 1500);
+        setTimeout(generateFinalNumbers, 1600);
     }
 
     function generateFinalNumbers() {
         const createSet = (off) => {
             const r = mulberry32(currentUserSeed + off); 
             const s = new Set();
-            while(s.size < 6) s.add(Math.floor(r() * 45) + 1);
-            return Array.from(s).sort((a,b)=>a-b);
+            while(s.size < 7) {
+                s.add(Math.floor(r() * 45) + 1);
+            }
+            const arr = Array.from(s);
+            const mainNumbers = arr.slice(0, 6).sort((a,b)=>a-b);
+            const bonusNumber = arr[6];
+            return { mainNumbers, bonusNumber };
         };
+
         const sets = [createSet(77), createSet(88)];
+        
         [1, 2].forEach(idx => {
-            const balls = document.getElementById(`numberContainer${idx}`).querySelectorAll('.lotto-ball');
-            sets[idx-1].forEach((n, i) => {
+            const container = document.getElementById(`numberContainer${idx}`);
+            const balls = container.querySelectorAll('.lotto-ball'); 
+            const data = sets[idx-1];
+            
+            // 메인 6자리 전통 드럼 순차 오픈
+            data.mainNumbers.forEach((n, i) => {
                 setTimeout(() => { 
                     balls[i].classList.remove('rolling'); 
-                    balls[i].textContent = n; 
+                    balls[i].innerHTML = `<span>${String(n).padStart(2, '0')}</span>`; 
                 }, i * 150);
             });
+            
+            // 보너스볼 마지막 극적 오픈 효과
+            setTimeout(() => {
+                const bonusBall = balls[6];
+                bonusBall.classList.remove('rolling');
+                bonusBall.innerHTML = `<span>${String(data.bonusNumber).padStart(2, '0')}</span>`;
+            }, 6 * 150);
         });
-        document.getElementById('lottoStatusText').textContent = "행운의 숫자 추출이 완료되었습니다.";
+        document.getElementById('lottoStatusText').textContent = "천기누설 흐름에 완벽히 동조된 로또 행운수 조율이 완성되었습니다.";
     }
 
     function resetInterface() {
