@@ -47,17 +47,17 @@
         color: #3A302E;
         background-image:
             radial-gradient(circle at 50% 0%, rgba(224, 204, 190, 0.35) 0%, transparent 60%),
-            radial-gradient(circle at 100% 100%, rgba(161, 181, 208, 0.2) 0%, transparent 50%),
             url('https://www.transparenttextures.com/patterns/papyrous.png');
-        background-attachment: fixed;
         word-break: keep-all;
+        /* background-attachment: fixed 속성은 모바일 스크롤 성능 저하의 주범이므로 제거 */
     }
     .glass-card {
-        background: rgba(255, 255, 255, 0.75);
-        backdrop-filter: blur(15px);
-        -webkit-backdrop-filter: blur(15px);
+        background: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
         border: 1px solid rgba(212, 163, 115, 0.3);
-        box-shadow: 0 10px 30px rgba(58, 48, 46, 0.05);
+        box-shadow: 0 4px 20px rgba(58, 48, 46, 0.05);
+        transform: translateZ(0); /* GPU 가속 활성화 */
     }
     .chart-box { position: relative; width: 100%; height: 260px; margin: 0 auto; }
     .lotto-ball {
@@ -71,8 +71,10 @@
         font-size: 1rem;
         box-shadow: 0 3px 8px rgba(90, 69, 21, 0.15), inset 0 1px 2px rgba(255, 255, 255, 0.8);
         border: 1.5px solid #b28254;
-        transition: transform 0.3s ease;
+        transition: transform 0.2s ease; /* 전환 시간 단축 */
         flex-shrink: 0;
+        transform: translateZ(0); /* 하드웨어 가속 */
+        will-change: transform;
     }
     @media (min-width: 640px) {
         .lotto-ball {
@@ -80,7 +82,6 @@
             height: 3.2rem;
             font-size: 1.25rem;
             border-width: 2px;
-            box-shadow: 0 5px 12px rgba(90, 69, 21, 0.15), inset 0 1.5px 3px rgba(255, 255, 255, 0.8);
         }
     }
     .lotto-ball::before {
@@ -91,13 +92,9 @@
         border-radius: 50%;
         border: 1px dashed rgba(178, 130, 84, 0.5);
         z-index: 1;
-        box-shadow: inset 0 1px 3px rgba(90, 69, 21, 0.1);
     }
     @media (min-width: 640px) {
-        .lotto-ball::before {
-            top: 3px; left: 3px; right: 3px; bottom: 3px;
-            box-shadow: inset 0 2px 4px rgba(90, 69, 21, 0.1);
-        }
+        .lotto-ball::before { top: 3px; left: 3px; right: 3px; bottom: 3px; }
     }
     .lotto-ball::after {
         content: '';
@@ -122,18 +119,12 @@
         background: radial-gradient(circle, #f0e6df 0%, #cfb8aa 100%);
         border-color: #a89487;
     }
-    .lotto-ball.rolling::before {
-        background: #f7ede8;
-        border: 1px dashed rgba(178, 130, 84, 0.3);
-    }
-    .lotto-ball.rolling::after { border-color: #e5d2c4; }
-    .lotto-ball.rolling span { color: #a2897a; text-shadow: none; }
     .input-field {
         background: rgba(255, 255, 255, 0.65);
         border: 1px solid rgba(212, 163, 115, 0.4);
         color: #3A302E;
         font-size: 16px !important;
-        transition: all 0.3s ease;
+        transition: all 0.2s ease;
     }
     .input-field:focus {
         border-color: #D4A373;
