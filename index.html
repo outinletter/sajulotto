@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>천기누설 : 사주와 로또의 만남</title>
+<link rel="icon" href="icons/sajulottoicon.png">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700;900&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
@@ -184,26 +185,50 @@
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
+                    <label class="block text-[11px] font-bold text-accent/80 mb-1.5 uppercase tracking-wider">양력/음력</label>
+                    <div class="flex gap-2">
+                        <label class="flex-1 flex items-center justify-center gap-1 cursor-pointer input-field py-3.5 rounded-xl text-xs"><input type="radio" name="calendar" value="S" checked class="accent-accent"> 양력</label>
+                        <label class="flex-1 flex items-center justify-center gap-1 cursor-pointer input-field py-3.5 rounded-xl text-xs"><input type="radio" name="calendar" value="L" class="accent-accent"> 음력</label>
+                        <label class="flex-1 flex items-center justify-center gap-1 cursor-pointer input-field py-3.5 rounded-xl text-xs"><input type="radio" name="calendar" value="LI" class="accent-accent"> 음력(윤달)</label>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-[11px] font-bold text-accent/80 mb-1.5 uppercase tracking-wider">태어난 지역 (시차 보정)</label>
+                    <div class="select-wrapper">
+                        <select id="inputCity" class="input-field w-full px-4 py-3.5 rounded-xl appearance-none cursor-pointer font-medium text-sm">
+                            <option value="127.02">서울/인천/경기</option>
+                            <option value="129.07">부산/울산/경남</option>
+                            <option value="128.60">대구/경북</option>
+                            <option value="126.85">광주/전라</option>
+                            <option value="127.38">대전/세종/충청</option>
+                            <option value="127.73">강원</option>
+                            <option value="126.53">제주</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
                     <label class="block text-[11px] font-bold text-accent/80 mb-1.5 uppercase tracking-wider">생년월일 (8자리)</label>
                     <input type="text" id="inputBirth" required maxlength="10" inputmode="numeric" class="input-field w-full px-4 py-3.5 rounded-xl placeholder-soft/30" placeholder="예: 19950512">
                 </div>
                 <div>
-                    <label class="block text-[11px] font-bold text-accent/80 mb-1.5 uppercase tracking-wider">태어난 시 (Time)</label>
+                    <label class="block text-[11px] font-bold text-accent/80 mb-1.5 uppercase tracking-wider">태어난 시 (시간)</label>
                     <div class="select-wrapper">
                         <select id="inputTime" class="input-field w-full px-4 py-3.5 rounded-xl appearance-none cursor-pointer font-medium">
                             <option value="unknown">태어난 시간 모름</option>
-                            <option value="0">자시 (23:30 ~ 01:30)</option>
-                            <option value="1">축시 (01:30 ~ 03:30)</option>
-                            <option value="2">인시 (03:30 ~ 05:30)</option>
-                            <option value="3">묘시 (05:30 ~ 07:30)</option>
-                            <option value="4">진시 (07:30 ~ 09:30)</option>
-                            <option value="5">사시 (09:30 ~ 11:30)</option>
-                            <option value="6">오시 (11:30 ~ 13:30)</option>
-                            <option value="7">미시 (13:30 ~ 15:30)</option>
-                            <option value="8">신시 (15:30 ~ 17:30)</option>
-                            <option value="9">유시 (17:30 ~ 19:30)</option>
-                            <option value="10">술시 (19:30 ~ 21:30)</option>
-                            <option value="11">해시 (21:30 ~ 23:30)</option>
+                            <option value="0">자시 (23시~01시)</option>
+                            <option value="1">축시 (01시~03시)</option>
+                            <option value="2">인시 (03시~05시)</option>
+                            <option value="3">묘시 (05시~07시)</option>
+                            <option value="4">진시 (07시~09시)</option>
+                            <option value="5">사시 (09시~11시)</option>
+                            <option value="6">오시 (11시~13시)</option>
+                            <option value="7">미시 (13시~15시)</option>
+                            <option value="8">신시 (15시~17시)</option>
+                            <option value="9">유시 (17시~19시)</option>
+                            <option value="10">술시 (19시~21시)</option>
+                            <option value="11">해시 (21시~23시)</option>
                         </select>
                     </div>
                 </div>
@@ -366,34 +391,65 @@
 
     const SolarManager = {
         cache: JSON.parse(localStorage.getItem('solarTermsDB') || '{}'),
+        lunarCache: JSON.parse(localStorage.getItem('lunarToSolarDB') || '{}'),
+        // 절기별 표준 날짜 (API 실패시 대비)
+        defaultJeols: { '소한': 6, '입춘': 4, '경칩': 6, '청명': 5, '입하': 6, '망종': 6, '소서': 8, '입추': 8, '백로': 8, '한로': 9, '입동': 8, '대설': 7 },
         async fetchYear(year) {
-            if (this.cache[year]) return this.cache[year];
+            if (this.cache[year] && Object.keys(this.cache[year]).length >= 12) return this.cache[year];
             const months = Array.from({length: 12}, (_, i) => i + 1);
             const yearData = {};
             await Promise.all(months.map(async (m) => {
                 try {
                     const res = await fetch(`https://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService/get24DivisionsInfo?serviceKey=${SERVICE_KEY}&solYear=${year}&solMonth=${m.toString().padStart(2, '0')}&_type=json`);
                     const data = await res.json();
-                    const items = data.response.body.items.item;
-                    if (Array.isArray(items)) {
-                        items.forEach(item => { if (JEOL_NAMES.includes(item.dateName)) yearData[item.dateName] = { date: item.locdate.toString(), time: item.kst.toString().padStart(4, '0') }; });
-                    } else if (items && JEOL_NAMES.includes(items.dateName)) {
-                        yearData[items.dateName] = { date: items.locdate.toString(), time: items.kst.toString().padStart(4, '0') };
-                    }
-                } catch (e) { console.error(`Error fetching ${year}-${m}`, e); }
+                    const items = data.response?.body?.items?.item;
+                    const processItem = (item) => {
+                        if (item && JEOL_NAMES.includes(item.dateName)) {
+                            yearData[item.dateName] = {
+                                date: item.locdate.toString(),
+                                time: item.kst.toString().padStart(4, '0')
+                            };
+                        }
+                    };
+                    if (Array.isArray(items)) items.forEach(processItem);
+                    else if (items) processItem(items);
+                } catch (e) { console.error(`Error fetching divisions ${year}-${m}`, e); }
             }));
             if (Object.keys(yearData).length > 0) {
-                this.cache[year] = yearData;
+                this.cache[year] = { ...this.cache[year], ...yearData };
                 localStorage.setItem('solarTermsDB', JSON.stringify(this.cache));
             }
             return yearData;
         },
+        async convertLunarToSolar(year, month, day, isIntercalary) {
+            const key = `${year}${month.toString().padStart(2,'0')}${day.toString().padStart(2,'0')}${isIntercalary?'I':'S'}`;
+            if (this.lunarCache[key]) return this.lunarCache[key];
+
+            try {
+                const leap = isIntercalary ? '윤달' : '평달';
+                const res = await fetch(`https://apis.data.go.kr/B090041/openapi/service/LrsrCldInfoService/getLunarToSolarInfo?serviceKey=${SERVICE_KEY}&lunYear=${year}&lunMonth=${month.toString().padStart(2,'0')}&lunDay=${day.toString().padStart(2,'0')}&leapMonth=${leap}&_type=json`);
+                const data = await res.json();
+                const item = data.response?.body?.items?.item;
+                if (item) {
+                    const solar = { year: parseInt(item.solYear), month: parseInt(item.solMonth), day: parseInt(item.solDay) };
+                    this.lunarCache[key] = solar;
+                    localStorage.setItem('lunarToSolarDB', JSON.stringify(this.lunarCache));
+                    return solar;
+                }
+            } catch (e) { console.error("Lunar conversion error", e); }
+            return { year, month, day };
+        },
         getJeolDateTime(year, jeolName) {
             const data = this.cache[year];
-            if (!data || !data[jeolName]) return null;
-            const d = data[jeolName].date;
-            const t = data[jeolName].time;
-            return new Date(d.substring(0,4), parseInt(d.substring(4,6))-1, d.substring(6,8), t.substring(0,2), t.substring(2,4));
+            if (data && data[jeolName]) {
+                const d = data[jeolName].date;
+                const t = data[jeolName].time;
+                return new Date(d.substring(0,4), parseInt(d.substring(4,6))-1, d.substring(6,8), t.substring(0,2), t.substring(2,4));
+            }
+            // API 데이터 부재 시 기본값 반환 (매년 비슷한 시기에 절기가 들어옴)
+            const day = this.defaultJeols[jeolName] || 5;
+            const monthMap = { '소한': 0, '입춘': 1, '경칩': 2, '청명': 3, '입하': 4, '망종': 5, '소서': 6, '입추': 7, '백로': 8, '한로': 9, '입동': 10, '대설': 11 };
+            return new Date(year, monthMap[jeolName], day, 12, 0); // 기본 낮 12시로 설정
         }
     };
 
@@ -440,6 +496,9 @@
         const name = nameInput || "익명";
         const birth = document.getElementById('inputBirth').value;
         const time = document.getElementById('inputTime').value;
+        const calType = document.querySelector('input[name="calendar"]:checked').value;
+        const longitude = parseFloat(document.getElementById('inputCity').value);
+
         const digitsOnly = birth.replace(/\D/g, "");
         if(digitsOnly.length < 8) { alert("생년월일 8자리를 정확히 입력해주세요."); return; }
 
@@ -447,19 +506,28 @@
         btn.disabled = true;
         btn.textContent = "명리학 정밀 분석 중...";
 
-        const birthYear = parseInt(digitsOnly.substring(0, 4));
-        const currentYear = nextSaturday.getFullYear();
+        let birthYear = parseInt(digitsOnly.substring(0, 4));
+        let birthMonth = parseInt(digitsOnly.substring(4, 6));
+        let birthDay = parseInt(digitsOnly.substring(6, 8));
 
         document.getElementById('inputPortal').style.display = 'none';
         document.getElementById('loadingState').classList.replace('hidden', 'flex');
-        
-        document.getElementById('loadingText').textContent = "천문연구원 절기 데이터를 동기화하고 있습니다...";
+        document.getElementById('loadingText').textContent = "천문연구원 데이터를 동기화하고 있습니다...";
+
+        if (calType === 'L' || calType === 'LI') {
+            const solar = await SolarManager.convertLunarToSolar(birthYear, birthMonth, birthDay, calType === 'LI');
+            birthYear = solar.year;
+            birthMonth = solar.month;
+            birthDay = solar.day;
+        }
+
+        const currentYear = nextSaturday.getFullYear();
         await SolarManager.fetchYear(birthYear);
         await SolarManager.fetchYear(birthYear - 1);
         await SolarManager.fetchYear(currentYear);
         await SolarManager.fetchYear(currentYear - 1);
 
-        currentUserSeed = generateSeed(name, digitsOnly, time, nextSaturdayISO);
+        currentUserSeed = generateSeed(name, digitsOnly + calType + longitude, time, nextSaturdayISO);
         
         let start = null;
         function animate(t) {
@@ -470,7 +538,7 @@
             if(prog < ANIMATION_DURATION) requestAnimationFrame(animate);
             else {
                 document.getElementById('loadingState').classList.replace('flex', 'hidden');
-                buildDashboard(name, digitsOnly, time);
+                buildDashboard(name, {year: birthYear, month: birthMonth, day: birthDay}, time, longitude);
             }
         }
         requestAnimationFrame(animate);
@@ -559,25 +627,42 @@
         return '중화';
     }
 
-    function buildDashboard(name, birthDigits, timeVal) {
-        const year = parseInt(birthDigits.substring(0, 4));
-        const month = parseInt(birthDigits.substring(4, 6));
-        const day = parseInt(birthDigits.substring(6, 8));
-        const hour = timeVal === 'unknown' ? 12 : parseInt(timeVal) * 2 + 1;
+    function buildDashboard(name, solarBirth, timeVal, longitude) {
+        const { year, month, day } = solarBirth;
+
+        const timeOffsetMinutes = (135 - longitude) * 4;
+
+        let baseHour = 12;
+        let baseMin = 0;
+        let hourBranchIdx = null;
+
+        if (timeVal !== 'unknown') {
+            const inputHour = parseInt(timeVal) * 2 + 1; // 입력 시각의 중심 (00, 02, 04...)
+            const totalMinutes = (inputHour * 60) - timeOffsetMinutes;
+            baseHour = Math.floor(totalMinutes / 60);
+            baseMin = totalMinutes % 60;
+
+            // 보정된 시각 기준 지지 인덱스 계산
+            const adjustedTotalMin = (baseHour * 60 + baseMin + 1440) % 1440;
+            if (adjustedTotalMin >= 1380 || adjustedTotalMin < 60) hourBranchIdx = 0;
+            else hourBranchIdx = Math.floor((adjustedTotalMin + 60) / 120);
+        }
 
         document.getElementById('displayUser').textContent = name;
         document.getElementById('saturdayDate').textContent = nextSaturdayDateStr;
         
-        const yearPillar = getYearPillar(year, month, day, hour, 0);
-        const monthPillar = getMonthPillar(year, month, day, hour, 0, yearPillar.stemIdx);
+        const yearPillar = getYearPillar(year, month, day, baseHour, baseMin);
+        const monthPillar = getMonthPillar(year, month, day, baseHour, baseMin, yearPillar.stemIdx);
         const dayPillar = getDayPillar(year, month, day);
-        const hourPillar = getHourPillar(dayPillar.stemIdx, timeVal);
+
+        const ratHourStemByDayStem = [0, 2, 4, 6, 8, 0, 2, 4, 6, 8];
+        const hourPillarData = hourBranchIdx === null ? { stemIdx: null, branchIdx: null } : { stemIdx: (ratHourStemByDayStem[dayPillar.stemIdx] + hourBranchIdx) % 10, branchIdx: hourBranchIdx };
 
         const pillars = [
             makePillar(yearPillar.stemIdx, yearPillar.branchIdx),
             makePillar(monthPillar.stemIdx, monthPillar.branchIdx),
             makePillar(dayPillar.stemIdx, dayPillar.branchIdx),
-            makePillar(hourPillar.stemIdx, hourPillar.branchIdx)
+            makePillar(hourPillarData.stemIdx, hourPillarData.branchIdx)
         ];
 
         document.getElementById('saju-year-hanja').innerHTML = `${pillars[0].stem}<br>${pillars[0].branch}`;
