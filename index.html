@@ -1,63 +1,777 @@
-plugins {
-    alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.compose)
-}
-
-android {
-        namespace = "com.addvalue.sajulotto"
-    compileSdk = 37
-
-    defaultConfig {
-        applicationId = "com.addvalue.sajulotto"
-        minSdk = 23
-        targetSdk = 37
-        versionCode = 2
-        versionName = "1.0"
-
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-    }
-
-    signingConfigs {
-        create("release") {
-            storeFile = file("D:/Data/Project/AndroidKeys/SajuLotto.jks")
-            // storePassword, keyAlias, keyPassword는 실제 값으로 변경이 필요합니다.
-            storePassword = "your_store_password"
-            keyAlias = "your_key_alias"
-            keyPassword = "your_key_password"
-        }
-    }
-
-    buildTypes {
-        release {
-            signingConfig = signingConfigs.getByName("release")
-            optimization {
-                enable = false
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>천기누설 : 사주와 로또의 만남</title>
+<link rel="icon" href="icons/sajulottoicon.png">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700;900&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+<script>
+    tailwind.config = {
+        theme: {
+            extend: {
+                colors: {
+                    primary: '#FAF7F2',
+                    secondary: '#A1B5D0',
+                    accent: '#D4A373',
+                    soft: '#3A302E',
+                    pastelGreen: '#CCD5AE',
+                    pastelRose: '#E8A598',
+                },
+                fontFamily: {
+                    serif: ['"Noto Serif KR"', 'serif'],
+                    sans: ['"Noto Sans KR"', 'sans-serif'],
+                },
+                animation: {
+                    'float-slow': 'float 6s ease-in-out infinite',
+                },
+                keyframes: {
+                    float: {
+                        '0%, 100%': { transform: 'translateY(0px)' },
+                        '50%': { transform: 'translateY(-8px)' },
+                    },
+                    slot: {
+                        '0%': { transform: 'translateY(-4px)', opacity: 0.6 },
+                        '100%': { transform: 'translateY(4px)', opacity: 0.9 },
+                    }
+                }
             }
         }
     }
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+</script>
+<style>
+    * { -webkit-tap-highlight-color: transparent; scroll-behavior: smooth; }
+    body {
+        background-color: #FAF7F2;
+        color: #3A302E;
+        background-image:
+            radial-gradient(circle at 50% 0%, rgba(224, 204, 190, 0.35) 0%, transparent 60%),
+            url('https://www.transparenttextures.com/patterns/papyrous.png');
+        word-break: keep-all;
     }
-    buildFeatures {
-        compose = true
+    .glass-card {
+        background: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        border: 1px solid rgba(212, 163, 115, 0.3);
+        box-shadow: 0 4px 20px rgba(58, 48, 46, 0.05);
+        transform: translateZ(0);
     }
-}
+    .chart-box { position: relative; width: 100%; height: 260px; margin: 0 auto; }
+    .lotto-ball {
+        display: flex; align-items: center; justify-content: center;
+        position: relative;
+        width: 2.45rem; height: 2.45rem; border-radius: 50%;
+        background: radial-gradient(circle, #faedd8 0%, #d4a373 70%, #a27244 100%);
+        color: #3A302E;
+        font-family: 'Noto Serif KR', serif;
+        font-weight: 900;
+        font-size: 1rem;
+        box-shadow: 0 3px 8px rgba(90, 69, 21, 0.15), inset 0 1px 2px rgba(255, 255, 255, 0.8);
+        border: 1.5px solid #b28254;
+        transition: transform 0.2s ease;
+        flex-shrink: 0;
+        transform: translateZ(0);
+        will-change: transform;
+    }
+    @media (min-width: 640px) {
+        .lotto-ball {
+            width: 3.2rem;
+            height: 3.2rem;
+            font-size: 1.25rem;
+            border-width: 2px;
+        }
+    }
+    .lotto-ball::before {
+        content: '';
+        position: absolute;
+        top: 2px; left: 2px; right: 2px; bottom: 2px;
+        background: radial-gradient(circle, #ffffff 0%, #faf8f5 70%, #f4ebd9 100%);
+        border-radius: 50%;
+        border: 1px dashed rgba(178, 130, 84, 0.5);
+        z-index: 1;
+    }
+    @media (min-width: 640px) {
+        .lotto-ball::before { top: 3px; left: 3px; right: 3px; bottom: 3px; }
+    }
+    .lotto-ball::after {
+        content: '';
+        position: absolute;
+        top: -1px; left: -1px; right: -1px; bottom: -1px;
+        border-radius: 50%;
+        border: 2.2px dotted #fff5e6;
+        opacity: 0.85;
+        z-index: 2;
+        pointer-events: none;
+    }
+    .lotto-ball span {
+        position: relative;
+        z-index: 3;
+        font-family: 'Noto Serif KR', serif;
+        font-weight: 900;
+        color: #2f2523;
+        text-shadow: 1px 1px 0px rgba(255, 255, 255, 0.9);
+    }
+    .lotto-ball.rolling {
+        animation: slot 0.12s linear infinite;
+        background: radial-gradient(circle, #f0e6df 0%, #cfb8aa 100%);
+        border-color: #a89487;
+    }
+    .input-field {
+        background: rgba(255, 255, 255, 0.65);
+        border: 1px solid rgba(212, 163, 115, 0.4);
+        color: #3A302E;
+        font-size: 16px !important;
+        transition: all 0.2s ease;
+    }
+    .input-field:focus {
+        border-color: #D4A373;
+        background: rgba(255, 255, 255, 0.95);
+        box-shadow: 0 0 0 3px rgba(212, 163, 115, 0.15);
+        outline: none;
+    }
+    .select-wrapper { position: relative; }
+    .select-wrapper::after {
+        content: '▼';
+        position: absolute;
+        right: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #D4A373;
+        font-size: 0.7rem;
+        pointer-events: none;
+    }
+    select option { background-color: #FAF7F2; color: #3A302E; padding: 10px; }
+</style>
+</head>
+<body class="font-sans antialiased min-h-screen relative overflow-x-hidden">
+<div class="max-w-4xl mx-auto px-5 py-8 md:py-16 relative z-10">
+    <header class="text-center mb-10 animate-float-slow">
+        <img src="icons/sajulottoicon.png" alt="로고" class="w-24 h-24 mx-auto mb-6 rounded-3xl shadow-sm border-2 border-accent/20">
+        <p class="text-accent font-serif tracking-[0.2em] text-xs mb-2 font-bold">✧ 천 기 누 설 ✧</p>
+        <h1 class="text-3xl md:text-5xl font-serif font-black text-soft mb-4 tracking-tight">사주와 로또의 만남</h1>
+        <p class="text-soft/80 font-light text-sm md:text-lg leading-relaxed px-2">
+            이번 주 행운의 정점을 찾아 최적의 번호를 도출합니다.
+        </p>
+    </header>
 
-dependencies {
-    implementation(platform(libs.androidx.compose.bom))
-    implementation(libs.androidx.activity.compose)
-    implementation(libs.androidx.compose.material3)
-    implementation(libs.androidx.compose.ui)
-    implementation(libs.androidx.compose.ui.graphics)
-    implementation(libs.androidx.compose.ui.tooling.preview)
-    implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.lifecycle.runtime.ktx)
-    testImplementation(libs.junit)
-    androidTestImplementation(platform(libs.androidx.compose.bom))
-    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
-    androidTestImplementation(libs.androidx.espresso.core)
-    androidTestImplementation(libs.androidx.junit)
-    debugImplementation(libs.androidx.compose.ui.test.manifest)
-    debugImplementation(libs.androidx.compose.ui.tooling)
-}
+    <section id="inputPortal" class="glass-card rounded-2xl p-6 md:p-10 transition-all duration-500">
+        <div class="mb-8 p-4 rounded-xl bg-accent/5 border border-accent/20 text-center">
+            <p class="text-accent text-sm font-bold mb-1">📅 주간 운명 리듬 분석</p>
+            <p class="text-soft/80 text-xs leading-relaxed">
+                일요일부터 토요일까지의 기류를 정밀 분석하여,<br>
+                귀하의 사주와 가장 합이 좋은 <span class="text-accent font-bold">최고의 행운 요일</span>을 찾아 번호를 생성합니다.
+            </p>
+        </div>
+        <div class="text-center mb-6">
+            <h2 class="text-xl font-serif font-bold text-accent mb-1">운명의 정보 입력</h2>
+            <p class="text-soft/60 text-xs font-light">태어난 시각과 정보를 정확히 조율할수록 하늘의 맥박과 더 일치합니다.</p>
+        </div>
+        <form id="destinyForm" class="space-y-5">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-[11px] font-bold text-accent/80 mb-1.5 uppercase tracking-wider">성함 (선택)</label>
+                    <input type="text" id="inputName" class="input-field w-full px-4 py-3.5 rounded-xl placeholder-soft/30" placeholder="미입력시 '익명'으로 분석">
+                </div>
+                <div>
+                    <label class="block text-[11px] font-bold text-accent/80 mb-1.5 uppercase tracking-wider">성별</label>
+                    <div class="flex gap-3">
+                        <label class="flex-1 flex items-center justify-center gap-2 cursor-pointer input-field py-3.5 rounded-xl"><input type="radio" name="gender" value="M" checked class="accent-accent"> <span class="text-sm font-medium">남성</span></label>
+                        <label class="flex-1 flex items-center justify-center gap-2 cursor-pointer input-field py-3.5 rounded-xl"><input type="radio" name="gender" value="F" class="accent-accent"> <span class="text-sm font-medium">여성</span></label>
+                    </div>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-[11px] font-bold text-accent/80 mb-1.5 uppercase tracking-wider">양력/음력</label>
+                    <div class="flex gap-2">
+                        <label class="flex-1 flex items-center justify-center gap-1 cursor-pointer input-field py-3.5 rounded-xl text-xs"><input type="radio" name="calendar" value="S" checked class="accent-accent"> 양력</label>
+                        <label class="flex-1 flex items-center justify-center gap-1 cursor-pointer input-field py-3.5 rounded-xl text-xs"><input type="radio" name="calendar" value="L" class="accent-accent"> 음력</label>
+                        <label class="flex-1 flex items-center justify-center gap-1 cursor-pointer input-field py-3.5 rounded-xl text-xs"><input type="radio" name="calendar" value="LI" class="accent-accent"> 음력(윤달)</label>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-[11px] font-bold text-accent/80 mb-1.5 uppercase tracking-wider">태어난 지역 (시차 보정)</label>
+                    <div class="select-wrapper">
+                        <select id="inputCity" class="input-field w-full px-4 py-3.5 rounded-xl appearance-none cursor-pointer font-medium text-sm">
+                            <option value="127.02">서울/인천/경기</option>
+                            <option value="129.07">부산/울산/경남</option>
+                            <option value="128.60">대구/경북</option>
+                            <option value="126.85">광주/전라</option>
+                            <option value="127.38">대전/세종/충청</option>
+                            <option value="127.73">강원</option>
+                            <option value="126.53">제주</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-[11px] font-bold text-accent/80 mb-1.5 uppercase tracking-wider">생년월일 (8자리)</label>
+                    <input type="text" id="inputBirth" required maxlength="10" inputmode="numeric" class="input-field w-full px-4 py-3.5 rounded-xl placeholder-soft/30" placeholder="예: 19950512">
+                </div>
+                <div>
+                    <label class="block text-[11px] font-bold text-accent/80 mb-1.5 uppercase tracking-wider">태어난 시 (시간)</label>
+                    <div class="select-wrapper">
+                        <select id="inputTime" class="input-field w-full px-4 py-3.5 rounded-xl appearance-none cursor-pointer font-medium">
+                            <option value="unknown">태어난 시간 모름</option>
+                            <option value="0">자시 (23시~01시)</option>
+                            <option value="1">축시 (01시~03시)</option>
+                            <option value="2">인시 (03시~05시)</option>
+                            <option value="3">묘시 (05시~07시)</option>
+                            <option value="4">진시 (07시~09시)</option>
+                            <option value="5">사시 (09시~11시)</option>
+                            <option value="6">오시 (11시~13시)</option>
+                            <option value="7">미시 (13시~15시)</option>
+                            <option value="8">신시 (15시~17시)</option>
+                            <option value="9">유시 (17시~19시)</option>
+                            <option value="10">술시 (19시~21시)</option>
+                            <option value="11">해시 (21시~23시)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <button type="submit" id="submitBtn" class="w-full mt-4 bg-gradient-to-br from-accent to-[#c3915f] text-white font-bold text-lg py-4 rounded-xl active:scale-[0.98] transition-all shadow-md shadow-accent/20">분석 및 번호 생성 ☯</button>
+        </form>
+    </section>
+
+    <div id="loadingState" class="hidden text-center py-16 flex-col items-center justify-center">
+        <div class="text-5xl text-accent animate-spin mb-6" style="animation-duration: 3s;">☯</div>
+        <h3 class="text-xl font-serif text-soft mb-2 font-bold">주간 행운 리듬 분석 중...</h3>
+        <p id="loadingText" class="text-xs text-soft/60">일주일간의 우주 주파수를 동기화하고 있습니다.</p>
+        <div class="max-w-[200px] w-full mx-auto h-[3px] bg-soft/10 rounded-full mt-6 overflow-hidden">
+            <div id="progressBar" class="h-full bg-accent transition-all duration-100 ease-linear" style="width: 0%"></div>
+        </div>
+    </div>
+
+    <main id="dashboard" class="hidden opacity-0 transition-opacity duration-1000 space-y-6">
+        <div class="text-center py-4 border-b border-accent/15">
+            <h2 class="text-2xl font-serif font-bold text-soft"><span id="displayUser" class="text-accent"></span>님의 행운 보고서</h2>
+            <p class="text-xs text-soft/60 mt-1 uppercase tracking-widest font-bold">금주 최고의 행운일: <span id="bestDayInfo" class="text-accent text-lg"></span></p>
+        </div>
+
+        <section class="glass-card rounded-2xl p-4 md:p-6 text-center">
+            <h3 class="text-lg font-serif font-bold text-accent mb-1">✨ <span id="luckyDayTitle"></span> 행운의 조합 (5대 세트)</h3>
+            <p id="lottoStatusText" class="text-[11px] text-soft/50 mb-6 italic">최적의 주파수 조율 중...</p>
+            <div class="space-y-4 text-center">
+                <div class="p-4 rounded-xl bg-[#FAF1E6] border border-[#E9D5C3]/60 shadow-sm transition-all hover:shadow-md">
+                    <p class="text-[10px] text-accent/80 font-bold mb-3 tracking-widest uppercase text-center">조합 A : 기운 보완형</p>
+                    <div id="numberContainer1" class="flex flex-nowrap justify-center items-center gap-1.5 md:gap-3 overflow-x-hidden"></div>
+                </div>
+                <div class="p-4 rounded-xl bg-[#F0F4EE] border border-[#D5E0D0]/60 shadow-sm transition-all hover:shadow-md">
+                    <p class="text-[10px] text-[#7A8F75] font-bold mb-3 tracking-widest uppercase text-center">조합 B : 기운 집중형</p>
+                    <div id="numberContainer2" class="flex flex-nowrap justify-center items-center gap-1.5 md:gap-3 overflow-x-hidden"></div>
+                </div>
+                <div class="p-4 rounded-xl bg-[#EEF2F7] border border-[#D3DFED]/60 shadow-sm transition-all hover:shadow-md">
+                    <p class="text-[10px] text-[#627D9F] font-bold mb-3 tracking-widest uppercase text-center">조합 C : 우주 동조형</p>
+                    <div id="numberContainer3" class="flex flex-nowrap justify-center items-center gap-1.5 md:gap-3 overflow-x-hidden"></div>
+                </div>
+                <div class="p-4 rounded-xl bg-[#FAF0F2] border border-[#ECD1D5]/60 shadow-sm transition-all hover:shadow-md">
+                    <p class="text-[10px] text-[#A66F77] font-bold mb-3 tracking-widest uppercase text-center">조합 D : 천지 순항형</p>
+                    <div id="numberContainer4" class="flex flex-nowrap justify-center items-center gap-1.5 md:gap-3 overflow-x-hidden"></div>
+                </div>
+                <div class="p-4 rounded-xl bg-[#F6F5F0] border border-[#E1DEC9]/60 shadow-sm transition-all hover:shadow-md">
+                    <p class="text-[10px] text-[#858063] font-bold mb-3 tracking-widest uppercase text-center">조합 E : 길성 수호형</p>
+                    <div id="numberContainer5" class="flex flex-nowrap justify-center items-center gap-1.5 md:gap-3 overflow-x-hidden"></div>
+                </div>
+            </div>
+        </section>
+
+        <section class="glass-card rounded-2xl p-6 md:p-8">
+            <div class="text-center mb-6">
+                <h3 class="text-md font-serif font-bold text-accent uppercase tracking-widest mb-1">☯ 사주 명식 & 오행 분포</h3>
+                <p class="text-soft/60 text-[10px]">입력하신 생년월일시의 타고난 에너지</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
+                <div class="bg-white/40 p-5 rounded-xl border border-accent/20 flex flex-col justify-between shadow-inner">
+                    <p class="text-accent text-[10px] font-bold text-center uppercase tracking-wider mb-4">운명 명식 분석 (四柱)</p>
+                    <div class="grid grid-cols-4 gap-1 text-center font-serif">
+                        <div class="border-r border-accent/10 last:border-0">
+                            <span class="text-soft/60 text-[10px] block mb-2">년주</span>
+                            <span id="saju-year-hanja" class="text-2xl md:text-3xl font-bold text-soft block tracking-wider leading-relaxed">?</span>
+                            <span id="saju-year-hangul" class="text-[11px] text-accent font-bold mt-2 block">?</span>
+                        </div>
+                        <div class="border-r border-accent/10 last:border-0">
+                            <span class="text-soft/60 text-[10px] block mb-2">월주</span>
+                            <span id="saju-month-hanja" class="text-2xl md:text-3xl font-bold text-soft block tracking-wider leading-relaxed">?</span>
+                            <span id="saju-month-hangul" class="text-[11px] text-accent font-bold mt-2 block">?</span>
+                        </div>
+                        <div class="border-r border-accent/10 last:border-0">
+                            <span class="text-soft/60 text-[10px] block mb-2">일주</span>
+                            <span id="saju-day-hanja" class="text-2xl md:text-3xl font-bold text-soft block tracking-wider leading-relaxed">?</span>
+                            <span id="saju-day-hangul" class="text-[11px] text-accent font-bold mt-2 block">?</span>
+                        </div>
+                        <div>
+                            <span class="text-soft/60 text-[10px] block mb-2">시주</span>
+                            <span id="saju-hour-hanja" class="text-2xl md:text-3xl font-bold text-soft block tracking-wider leading-relaxed">?</span>
+                            <span id="saju-hour-hangul" class="text-[11px] text-accent font-bold mt-2 block">?</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white/40 p-5 rounded-xl border border-accent/20 flex flex-col justify-between shadow-inner">
+                    <p class="text-accent text-[10px] font-bold text-center uppercase tracking-wider mb-4">타고난 오행 에너지 (五행)</p>
+                    <div class="flex justify-around items-center py-2">
+                        <div class="text-center">
+                            <div class="w-9 h-9 rounded-full bg-[#6B8E23] text-white flex items-center justify-center font-bold text-sm mx-auto shadow-sm border border-white/40">木</div>
+                            <span id="dist-wood" class="text-sm font-bold text-soft block mt-2">0</span>
+                        </div>
+                        <div class="text-center">
+                            <div class="w-9 h-9 rounded-full bg-[#E07A5F] text-white flex items-center justify-center font-bold text-sm mx-auto shadow-sm border border-white/40">火</div>
+                            <span id="dist-fire" class="text-sm font-bold text-soft block mt-2">0</span>
+                        </div>
+                        <div class="text-center">
+                            <div class="w-9 h-9 rounded-full bg-[#D4A373] text-white flex items-center justify-center font-bold text-sm mx-auto shadow-sm border border-white/40">土</div>
+                            <span id="dist-earth" class="text-sm font-bold text-soft block mt-2">0</span>
+                        </div>
+                        <div class="text-center">
+                            <div class="w-9 h-9 rounded-full bg-[#A8A29E] text-white flex items-center justify-center font-bold text-sm mx-auto shadow-sm border border-white/40">金</div>
+                            <span id="dist-metal" class="text-sm font-bold text-soft block mt-2">0</span>
+                        </div>
+                        <div class="text-center">
+                            <div class="w-9 h-9 rounded-full bg-[#8CA4D8] text-white flex items-center justify-center font-bold text-sm mx-auto shadow-sm border border-white/40">水</div>
+                            <span id="dist-water" class="text-sm font-bold text-soft block mt-2">0</span>
+                        </div>
+                    </div>
+                    <p class="text-[10px] text-soft/60 text-center mt-3">※ 사주 원국 오행 분포도</p>
+                </div>
+            </div>
+        </section>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <section class="glass-card rounded-2xl p-6">
+                <h3 class="text-md font-serif font-bold text-accent mb-4 text-center">📊 금주 오행 기운 하모니도</h3>
+                <div class="chart-box"><canvas id="sajuRadarChart"></canvas></div>
+            </section>
+            <section class="glass-card rounded-2xl p-6">
+                <h3 class="text-md font-serif font-bold text-accent mb-6 flex items-center justify-center gap-2">
+                    📖 행운 요일 운세 해설
+                </h3>
+                <div class="space-y-4" id="insightContainer">
+                    <div class="insight-card p-4 rounded-xl bg-white/50 border border-accent/10 shadow-sm">
+                        <h4 class="text-accent text-xs font-bold mb-2 flex items-center gap-2">
+                            <span class="w-5 h-5 flex items-center justify-center bg-accent/20 rounded-full text-[9px]">🌟</span> 선택된 요일의 기류 분석
+                        </h4>
+                        <div id="insight-total" class="text-soft/90 leading-relaxed text-[13px] text-justify space-y-2"></div>
+                    </div>
+                    <div class="insight-card p-4 rounded-xl bg-white/50 border border-accent/10 shadow-sm">
+                        <h4 class="text-accent text-xs font-bold mb-2 flex items-center gap-2">
+                            <span class="w-5 h-5 flex items-center justify-center bg-accent/20 rounded-full text-[9px]">💰</span> 해당 요일의 재물운 포인트
+                        </h4>
+                        <div id="insight-wealth" class="text-soft/90 leading-relaxed text-[13px] text-justify space-y-2"></div>
+                    </div>
+                    <div class="insight-card p-4 rounded-xl bg-white/50 border border-accent/10 shadow-sm">
+                        <h4 class="text-accent text-xs font-bold mb-2 flex items-center gap-2">
+                            <span class="w-5 h-5 flex items-center justify-center bg-accent/20 rounded-full text-[9px]">🍀</span> 행운을 부르는 비결
+                        </h4>
+                        <div id="insight-health" class="text-soft/90 leading-relaxed text-[13px] text-justify space-y-2"></div>
+                    </div>
+                </div>
+            </section>
+        </div>
+        <div class="text-center pt-8 pb-4">
+            <button onclick="resetInterface()" class="px-8 py-3 rounded-full border border-accent/40 text-accent font-medium text-sm hover:bg-accent/10 active:scale-95 transition-all">← 다시 분석하기</button>
+        </div>
+    </main>
+</div>
+
+<script>
+    const SERVICE_KEY = '8T%2FV79pamqQ%2Bwr4pQdRlcKF6772dzCiwbyc90iX1L1aRSliNgh0ceaYF74KbTjq9aKkoNZqJgmO8ftDWbx6nng%3D%3D';
+    const JEOL_NAMES = ['입춘', '경칩', '청명', '입하', '망종', '소서', '입추', '백로', '한로', '입동', '대설', '소한'];
+
+    let radarChartInstance = null;
+    let currentUserSeed = 0;
+    const ANIMATION_DURATION = 2000;
+
+    const heavenlyStems = ['甲', '乙', '丙', '丁', '戊', '己', '庚', '辛', '壬', '癸'];
+    const earthlyBranches = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥'];
+    const stemKorean = ['갑', '을', '병', '정', '무', '기', '경', '신', '임', '계'];
+    const branchKorean = ['자', '축', '인', '묘', '진', '사', '오', '미', '신', '유', '술', '해'];
+    const weekDays = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
+
+    const SolarManager = {
+        cache: JSON.parse(localStorage.getItem('solarTermsDB') || '{}'),
+        lunarCache: JSON.parse(localStorage.getItem('lunarToSolarDB') || '{}'),
+        defaultJeols: { '소한': 6, '입춘': 4, '경칩': 6, '청명': 5, '입하': 6, '망종': 6, '소서': 8, '입추': 8, '백로': 8, '한로': 9, '입동': 8, '대설': 7 },
+        async fetchYear(year) {
+            if (this.cache[year] && Object.keys(this.cache[year]).length >= 12) return this.cache[year];
+            const months = Array.from({length: 12}, (_, i) => i + 1);
+            const yearData = {};
+            await Promise.all(months.map(async (m) => {
+                try {
+                    const res = await fetch(`https://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService/get24DivisionsInfo?serviceKey=${SERVICE_KEY}&solYear=${year}&solMonth=${m.toString().padStart(2, '0')}&_type=json`);
+                    const data = await res.json();
+                    const items = data.response?.body?.items?.item;
+                    const processItem = (item) => {
+                        if (item && JEOL_NAMES.includes(item.dateName)) {
+                            yearData[item.dateName] = { date: item.locdate.toString(), time: item.kst.toString().padStart(4, '0') };
+                        }
+                    };
+                    if (Array.isArray(items)) items.forEach(processItem);
+                    else if (items) processItem(items);
+                } catch (e) { console.error(e); }
+            }));
+            if (Object.keys(yearData).length > 0) {
+                this.cache[year] = { ...this.cache[year], ...yearData };
+                localStorage.setItem('solarTermsDB', JSON.stringify(this.cache));
+            }
+            return yearData;
+        },
+        async convertLunarToSolar(year, month, day, isIntercalary) {
+            const key = `${year}${month.toString().padStart(2,'0')}${day.toString().padStart(2,'0')}${isIntercalary?'I':'S'}`;
+            if (this.lunarCache[key]) return this.lunarCache[key];
+            try {
+                const leap = isIntercalary ? '윤달' : '평달';
+                const res = await fetch(`https://apis.data.go.kr/B090041/openapi/service/LrsrCldInfoService/getLunarToSolarInfo?serviceKey=${SERVICE_KEY}&lunYear=${year}&lunMonth=${month.toString().padStart(2,'0')}&lunDay=${day.toString().padStart(2,'0')}&leapMonth=${leap}&_type=json`);
+                const data = await res.json();
+                const item = data.response?.body?.items?.item;
+                if (item) {
+                    const solar = { year: parseInt(item.solYear), month: parseInt(item.solMonth), day: parseInt(item.solDay) };
+                    this.lunarCache[key] = solar;
+                    localStorage.setItem('lunarToSolarDB', JSON.stringify(this.lunarCache));
+                    return solar;
+                }
+            } catch (e) { console.error(e); }
+            return { year, month, day };
+        },
+        getJeolDateTime(year, jeolName) {
+            const data = this.cache[year];
+            if (data && data[jeolName]) {
+                const d = data[jeolName].date;
+                const t = data[jeolName].time;
+                return new Date(d.substring(0,4), parseInt(d.substring(4,6))-1, d.substring(6,8), t.substring(0,2), t.substring(2,4));
+            }
+            const day = this.defaultJeols[jeolName] || 5;
+            const monthMap = { '소한': 0, '입춘': 1, '경칩': 2, '청명': 3, '입하': 4, '망종': 5, '소서': 6, '입추': 7, '백로': 8, '한로': 9, '입동': 10, '대설': 11 };
+            return new Date(year, monthMap[jeolName], day, 12, 0);
+        }
+    };
+
+    function getThisWeekInfo() {
+        const today = new Date();
+        const currentDay = today.getDay(); // 0:일, 1:월, ... 6:토
+        const sunday = new Date(today);
+        sunday.setDate(today.getDate() - currentDay);
+
+        const weekDates = [];
+        for (let i = 0; i <= 6; i++) {
+            const d = new Date(sunday);
+            d.setDate(sunday.getDate() + i);
+            weekDates.push(d);
+        }
+        return weekDates;
+    }
+
+    function mulberry32(a) {
+        return function() {
+          var t = a += 0x6D2B79F5; t = Math.imul(t ^ t >>> 15, t | 1);
+          t ^= t + Math.imul(t ^ t >>> 7, t | 61); return ((t ^ t >>> 14) >>> 0) / 4294967296;
+        }
+    }
+
+    function generateSeed(name, birth, time, dateStr) {
+        let str = name + birth + time + dateStr;
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) { hash = ((hash << 5) - hash) + str.charCodeAt(i); hash |= 0; }
+        return Math.abs(hash);
+    }
+
+    document.getElementById('inputBirth').addEventListener('input', function(e) {
+        let val = e.target.value.replace(/\D/g, "");
+        if (val.length > 4 && val.length <= 6) val = val.substring(0, 4) + "-" + val.substring(4);
+        else if (val.length > 6) val = val.substring(0, 4) + "-" + val.substring(4, 6) + "-" + val.substring(6, 8);
+        e.target.value = val;
+    });
+
+    document.getElementById('destinyForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const nameInput = document.getElementById('inputName').value.trim();
+        const name = nameInput || "익명";
+        const birth = document.getElementById('inputBirth').value;
+        const time = document.getElementById('inputTime').value;
+        const calType = document.querySelector('input[name="calendar"]:checked').value;
+        const longitude = parseFloat(document.getElementById('inputCity').value);
+
+        const digitsOnly = birth.replace(/\D/g, "");
+        if(digitsOnly.length < 8) { alert("생년월일 8자리를 정확히 입력해주세요."); return; }
+
+        const btn = document.getElementById('submitBtn');
+        btn.disabled = true;
+        btn.textContent = "주간 행운 리듬 분석 중...";
+
+        let birthYear = parseInt(digitsOnly.substring(0, 4));
+        let birthMonth = parseInt(digitsOnly.substring(4, 6));
+        let birthDay = parseInt(digitsOnly.substring(6, 8));
+
+        document.getElementById('inputPortal').style.display = 'none';
+        document.getElementById('loadingState').classList.replace('hidden', 'flex');
+
+        if (calType === 'L' || calType === 'LI') {
+            const solar = await SolarManager.convertLunarToSolar(birthYear, birthMonth, birthDay, calType === 'LI');
+            birthYear = solar.year; birthMonth = solar.month; birthDay = solar.day;
+        }
+
+        const today = new Date();
+        await SolarManager.fetchYear(birthYear);
+        await SolarManager.fetchYear(birthYear - 1);
+        await SolarManager.fetchYear(today.getFullYear());
+
+        let start = null;
+        function animate(t) {
+            if(!start) start = t;
+            const prog = t - start;
+            const per = Math.min((prog/ANIMATION_DURATION)*100, 100);
+            document.getElementById('progressBar').style.width = per + "%";
+            if(prog < ANIMATION_DURATION) requestAnimationFrame(animate);
+            else {
+                document.getElementById('loadingState').classList.replace('flex', 'hidden');
+                buildWeeklyDashboard(name, {year: birthYear, month: birthMonth, day: birthDay}, time, longitude);
+            }
+        }
+        requestAnimationFrame(animate);
+    });
+
+    function getElementOfCharacter(char) {
+        if (['甲', '乙', '寅', '卯'].includes(char)) return 'wood';
+        if (['丙', '丁', '巳', '午'].includes(char)) return 'fire';
+        if (['戊', '己', '辰', '戌', '丑', '未'].includes(char)) return 'earth';
+        if (['庚', '辛', '申', '酉'].includes(char)) return 'metal';
+        if (['壬', '癸', '亥', '子'].includes(char)) return 'water';
+        return 'earth';
+    }
+
+    function getJulianDayNumber(year, month, day) {
+        const a = Math.floor((14 - month) / 12); const y = year + 4800 - a; const m = month + 12 * a - 3;
+        return day + Math.floor((153 * m + 2) / 5) + 365 * y + Math.floor(y / 4) - Math.floor(y / 100) + Math.floor(y / 400) - 32045;
+    }
+
+    function getYearPillar(year, month, day, hour, min) {
+        const birthTime = new Date(year, month - 1, day, hour, min);
+        const ipchun = SolarManager.getJeolDateTime(year, '입춘');
+        let effectiveYear = year;
+        if (ipchun && birthTime < ipchun) effectiveYear = year - 1;
+        const cycle = ((effectiveYear - 4) % 60 + 60) % 60;
+        return { stemIdx: cycle % 10, branchIdx: cycle % 12 };
+    }
+
+    function getMonthPillar(year, month, day, hour, min, yearStemIdx) {
+        const birthTime = new Date(year, month - 1, day, hour, min);
+        const jeols = ['', '소한', '입춘', '경칩', '청명', '입하', '망종', '소서', '입추', '백로', '한로', '입동', '대설'];
+        let branchIdx = 0;
+        let jeolTime = SolarManager.getJeolDateTime(year, jeols[month]);
+        branchIdx = (!jeolTime || birthTime < jeolTime) ? (month - 1) % 12 : month % 12;
+        const tigerMonthStemByYearStem = [2, 4, 6, 8, 0, 2, 4, 6, 8, 0];
+        const offsetFromTiger = (branchIdx - 2 + 12) % 12;
+        return { stemIdx: (tigerMonthStemByYearStem[yearStemIdx] + offsetFromTiger) % 10, branchIdx };
+    }
+
+    function getDayPillar(year, month, day) {
+        const jdn = getJulianDayNumber(year, month, day);
+        const cycle = (jdn + 49) % 60;
+        return { stemIdx: cycle % 10, branchIdx: cycle % 12 };
+    }
+
+    function makePillar(stemIdx, branchIdx) {
+        if (stemIdx === null || branchIdx === null) return { stem: '?', branch: '?', stH: '시', brH: '미상', stemIdx: null, branchIdx: null };
+        return { stem: heavenlyStems[stemIdx], branch: earthlyBranches[branchIdx], stH: stemKorean[stemIdx], brH: branchKorean[branchIdx], stemIdx, branchIdx };
+    }
+
+    function getTenGod(dayStemIdx, targetStemIdx) {
+        const dayEl = Math.floor(dayStemIdx / 2); const targetEl = Math.floor(targetStemIdx / 2);
+        const samePolarity = dayStemIdx % 2 === targetStemIdx % 2;
+        if (dayEl === targetEl) return samePolarity ? '비견' : '겁재';
+        if ((dayEl + 1) % 5 === targetEl) return samePolarity ? '식신' : '상관';
+        if ((dayEl + 2) % 5 === targetEl) return samePolarity ? '편재' : '정재';
+        if ((targetEl + 2) % 5 === dayEl) return samePolarity ? '편관' : '정관';
+        return samePolarity ? '편인' : '정인';
+    }
+
+    function buildWeeklyDashboard(name, solarBirth, timeVal, longitude) {
+        const { year, month, day } = solarBirth;
+        const timeOffsetMinutes = (135 - longitude) * 4;
+        let baseHour = 12, baseMin = 0, hourBranchIdx = null;
+
+        if (timeVal !== 'unknown') {
+            const totalMinutes = (parseInt(timeVal) * 2 + 1) * 60 - timeOffsetMinutes;
+            baseHour = Math.floor(totalMinutes / 60); baseMin = totalMinutes % 60;
+            const adjustedTotalMin = (baseHour * 60 + baseMin + 1440) % 1440;
+            hourBranchIdx = (adjustedTotalMin >= 1380 || adjustedTotalMin < 60) ? 0 : Math.floor((adjustedTotalMin + 60) / 120);
+        }
+
+        const yearPillar = getYearPillar(year, month, day, baseHour, baseMin);
+        const monthPillar = getMonthPillar(year, month, day, baseHour, baseMin, yearPillar.stemIdx);
+        const dayPillar = getDayPillar(year, month, day);
+        const hourPillarData = hourBranchIdx === null ? { stemIdx: null, branchIdx: null } : { stemIdx: ([0, 2, 4, 6, 8, 0, 2, 4, 6, 8][dayPillar.stemIdx] + hourBranchIdx) % 10, branchIdx: hourBranchIdx };
+
+        const pillars = [makePillar(yearPillar.stemIdx, yearPillar.branchIdx), makePillar(monthPillar.stemIdx, monthPillar.branchIdx), makePillar(dayPillar.stemIdx, dayPillar.branchIdx), makePillar(hourPillarData.stemIdx, hourPillarData.branchIdx)];
+        const distribution = { wood: 0, fire: 0, earth: 0, metal: 0, water: 0 };
+        pillars.filter(p => p.stem !== '?').forEach(p => { distribution[getElementOfCharacter(p.stem)]++; distribution[getElementOfCharacter(p.branch)]++; });
+
+        const weekDates = getThisWeekInfo();
+        let bestScore = -1, bestDayIdx = 0;
+        const dailyScores = weekDates.map((date, idx) => {
+            const dYear = date.getFullYear(), dMonth = date.getMonth() + 1, dDay = date.getDate();
+            const dDayP = getDayPillar(dYear, dMonth, dDay);
+            const tenGod = getTenGod(dayPillar.stemIdx, dDayP.stemIdx);
+
+            let score = 50; // 기본 점수
+            if (['편재', '정재'].includes(tenGod)) score += 30;
+            if (['식신', '상관'].includes(tenGod)) score += 20;
+            if (['편인', '정인'].includes(tenGod)) score += 10;
+            if (['정관'].includes(tenGod)) score += 15;
+
+            if (score > bestScore) { bestScore = score; bestDayIdx = idx; }
+            return { date, tenGod, score, dDayP };
+        });
+
+        const luckyDay = dailyScores[bestDayIdx];
+        const luckyDateStr = `${luckyDay.date.getFullYear()}-${String(luckyDay.date.getMonth()+1).padStart(2,'0')}-${String(luckyDay.date.getDate()).padStart(2,'0')}`;
+        currentUserSeed = generateSeed(name, luckyDateStr, timeVal, luckyDateStr);
+
+        document.getElementById('displayUser').textContent = name;
+        document.getElementById('bestDayInfo').textContent = `${weekDays[bestDayIdx]} (${luckyDateStr})`;
+        document.getElementById('luckyDayTitle').textContent = weekDays[bestDayIdx];
+
+        ['year', 'month', 'day', 'hour'].forEach((p, i) => {
+            document.getElementById(`saju-${p}-hanja`).innerHTML = `${pillars[i].stem}<br>${pillars[i].branch}`;
+            document.getElementById(`saju-${p}-hangul`).textContent = `${pillars[i].stH}${pillars[i].brH}`;
+        });
+
+        Object.keys(distribution).forEach(el => document.getElementById(`dist-${el}`).textContent = distribution[el]);
+
+        document.getElementById('dashboard').classList.remove('hidden');
+        setTimeout(() => {
+            document.getElementById('dashboard').classList.add('opacity-100');
+            drawRadarChart(Object.keys(distribution).map(el => Math.max(distribution[el] * 12.5 + 10, 15)));
+            startLottoRollingAnimation();
+            writeWeeklyInsights(name, weekDays[bestDayIdx], luckyDay.tenGod, distribution, getElementOfCharacter(pillars[2].stem));
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }, 100);
+    }
+
+    function drawRadarChart(data) {
+        const ctx = document.getElementById('sajuRadarChart').getContext('2d');
+        if (radarChartInstance) radarChartInstance.destroy();
+        radarChartInstance = new Chart(ctx, {
+            type: 'radar',
+            data: {
+                labels: ['목(木)', '화(火)', '토(土)', '금(金)', '수(水)'],
+                datasets: [{ data: data, backgroundColor: 'rgba(212, 163, 115, 0.2)', borderColor: '#D4A373', borderWidth: 2, pointBackgroundColor: '#D4A373' }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                scales: { r: { min: 0, max: 100, ticks: { display: false }, pointLabels: { color: '#3A302E', font: { size: 14, weight: 'bold' } } } },
+                plugins: { legend: { display: false } }
+            }
+        });
+    }
+
+    function writeWeeklyInsights(name, dayName, tenGod, distribution, dayEl) {
+        const tenGodDetails = {
+            '비견': {
+                name: '비견(比肩) - 자아의 확립과 동료애',
+                flow: '나와 기운이 같은 에너지가 들어와 주관이 뚜렷해지고 추진력이 배가되는 날입니다. 망설이던 마음이 사라지고 본인의 의지대로 행운을 개척할 수 있는 강력한 자아의 힘이 느껴지는 시기입니다.',
+                wealth: '주변 지인이나 친구를 통해 행운의 팁을 얻을 수 있는 흐름입니다. 혼자 고민하기보다 주변의 긍정적인 파동과 함께할 때 재물운의 통로가 더 넓게 열리며, 본인의 선택에 확신을 가져도 좋은 때입니다.',
+                secret: '오늘만큼은 본인의 직감을 전적으로 믿어보세요. 평소 즐겨 가던 장소나 익숙한 번호에서 예상치 못한 행운이 시작될 수 있습니다. 옷차림은 깔끔하고 자신감 있게 유지하는 것이 좋습니다.'
+            },
+            '겁재': {
+                name: '겁재(劫財) - 경쟁적 성취와 돌발적 기회',
+                flow: '강렬하고 역동적인 에너지가 소용돌이치는 날입니다. 경쟁 구도 속에서 예상치 못한 변수를 기회로 바꾸는 순발력이 빛을 발하며, 평범한 일상 속에 숨겨진 특별한 행운을 낚아채기에 최적화된 기류입니다.',
+                wealth: '하이리스크-하이리턴의 기운이 강하게 작용합니다. 평소보다 과감한 선택이 큰 결실로 이어질 수 있는 횡재수의 파동이 감지됩니다. 다만, 과욕은 금물이니 정해진 예산 내에서 승부수를 던지는 것이 유리합니다.',
+                secret: '조금은 낯선 장소나 새로운 방식의 선택이 행운을 부릅니다. 늘 하던 방식에서 벗어나 우연히 마주친 번호나 순간적인 영감을 기록해 보세요. 경쟁적인 분위기가 오히려 행운의 촉매제가 됩니다.'
+            },
+            '식신': {
+                name: '식신(食神) - 풍요로운 결실과 의식주의 복',
+                flow: '우주의 자애로운 기운이 감돌아 마음이 편안해지고 의식주가 풍족해지는 흐름입니다. 창의적인 발상이 샘솟고 본인의 재능이 자연스럽게 행운의 결과물로 치환되는 온화하고도 실속 있는 시기입니다.',
+                wealth: '억지로 쫓지 않아도 재물이 따르는 "먹을 복"이 있는 날입니다. 꾸준히 정성을 들여온 일에서 예상치 못한 추가 수익이나 행운이 발생하며, 안정적인 파동 속에서 당첨의 확률이 서서히 무르익어 갑니다.',
+                secret: '여유로운 마음가짐이 곧 행운의 주파수입니다. 맛있는 음식을 즐기거나 편안한 휴식을 취한 뒤 번호를 생성해 보세요. 즐거운 기분에서 나오는 긍정적인 에너지가 행운의 숫자를 끌어당깁니다.'
+            },
+            '상관': {
+                name: '상관(傷官) - 변화의 기회와 날카로운 직관',
+                flow: '기존의 틀을 깨고 새로운 시야를 갖게 되는 혁신적인 기운이 강해집니다. 두뇌 회전이 빨라지고 남들이 보지 못하는 틈새의 기운을 포착하는 능력이 극대화되어, 천기누설의 진가를 확인하기 좋은 날입니다.',
+                wealth: '재치 있는 아이디어나 순간적인 판단이 곧바로 재물적 이득으로 연결되는 흐름입니다. 고정관념에서 벗어난 변칙적인 선택이 의외의 큰 당첨으로 이어질 수 있으며, 본인의 표현력이 행운을 자극합니다.',
+                secret: '화려한 소품이나 반짝이는 장신구가 행운을 증폭시킵니다. 본인의 개성을 드러내는 행동이 우주의 관심을 끌어모으게 됩니다. 평소에 생각지 못한 독특한 조합의 번호에 주목해 보세요.'
+            },
+            '편재': {
+                name: '편재(偏財) - 광활한 재물운과 횡재의 예감',
+                flow: '역마의 기운과 함께 큰 규모의 재물이 이동하는 역동적인 파동이 느껴지는 날입니다. 활동 범위가 넓어지고 시야가 탁월해지며, 평소보다 큰 꿈을 꾸게 만드는 우주의 행운 전파가 본인에게 집중됩니다.',
+                wealth: '로또와 같은 일확천금의 기운이 가장 강력하게 작용하는 시기입니다. 고정 수익 외의 영역에서 큰 폭의 재물 흐름이 포착되며, 공간의 이동이나 새로운 소식을 통해 당첨의 결정적인 힌트를 얻을 수 있습니다.',
+                secret: '집에만 있기보다 가벼운 산책이나 외출을 통해 기운을 순환시키세요. 넓은 광장이나 탁 트인 곳에서 생성하는 번호가 우주의 거대한 재물 파동과 동조될 가능성이 매우 높습니다.'
+            },
+            '정재': {
+                name: '정재(正財) - 안정적인 수익과 성실의 보상',
+                flow: '차분하고 정밀한 기운이 지배하여 매사에 꼼꼼한 판단이 가능한 날입니다. 흩어져 있던 운의 조각들이 하나로 모여 견고한 행운의 기반을 형성하며, 노력한 만큼의 결실이 보장되는 신뢰도 높은 시기입니다.',
+                wealth: '철저한 분석과 관리가 재물운을 지탱합니다. 요행보다는 수치와 통계, 혹은 본인이 오랫동안 공들여 분석해온 데이터가 빛을 발하는 날입니다. 안정적인 파동 속에서 차곡차곡 쌓인 운이 당첨이라는 열매를 맺습니다.',
+                secret: '주변을 깨끗이 청소하고 경건한 마음으로 번호를 생성하세요. 정리정돈된 환경이 정재의 기운을 강화하여 행운의 정합성을 높여줍니다. 차분한 클래식 음악이나 명상이 도움이 됩니다.'
+            },
+            '편관': {
+                name: '편관(偏官) - 명예로운 도전과 카리스마',
+                flow: '엄격하고 강인한 에너지가 본인을 단련하는 날입니다. 다소 긴장감이 느껴질 수 있으나, 이를 극복했을 때 주어지는 보상은 상상을 초월합니다. 어려움을 뚫고 얻어내는 승리의 기운이 매우 강한 시기입니다.',
+                wealth: '극적인 반전이 예상되는 재물운입니다. 위기 상황이나 압박 속에서 오히려 정신이 맑아지며, 과감하게 승부수를 던졌을 때 하늘의 뜻(天命)이 당첨 번호로 실체화되는 흐름이 감지됩니다.',
+                secret: '본인을 절제하고 집중하는 태도가 필요합니다. 가벼운 운동으로 땀을 흘리거나 정신을 집중할 수 있는 활동 뒤에 번호를 확인하세요. 강한 정신력이 행운의 파동을 강력하게 붙잡아줍니다.'
+            },
+            '정관': {
+                name: '정관(正官) - 순리적 행운과 명예의 상승',
+                flow: '사회가 정한 규칙과 순리가 본인을 돕는 안정적인 기운입니다. 주변의 인정과 귀인의 도움이 따르며, 무리하지 않아도 일이 자연스럽게 풀려나가는 "운수 대통"의 평탄하고 밝은 흐름이 이어집니다.',
+                wealth: '정당한 권리와 문서상의 행운이 강하게 작용합니다. 복권이라는 문서가 나에게 행운을 가져다주는 정당한 도구가 되는 시기이며, 공적인 신뢰도가 높은 장소나 수단을 통해 얻은 번호가 길합니다.',
+                secret: '바른 자세와 예의 바른 태도가 행운을 부릅니다. 타인에게 친절을 베풀거나 사회적으로 선한 일을 할 때 본인의 행운 지수도 함께 상승합니다. 순리에 따르는 마음으로 행운을 기다리세요.'
+            },
+            '편인': {
+                name: '편인(偏人) - 신비로운 직관과 영적인 통찰',
+                flow: '보이지 않는 영역의 지혜와 영감이 발달하는 신비로운 날입니다. 꿈이나 예감이 적중할 확률이 높고, 논리적으로 설명하기 힘든 초자연적인 행운의 신호가 본인의 무의식을 자극하는 흥미로운 시기입니다.',
+                wealth: '남들은 모르는 나만의 "비밀스러운 행운"이 숨어 있습니다. 우연히 들은 말 한마디, 문득 스쳐 지나가는 이미지 등이 재물운의 결정적인 단서가 됩니다. 비세속적이고 독창적인 감각이 당첨을 부릅니다.',
+                secret: '혼자만의 정적인 시간을 가지며 내면의 목소리에 귀를 기울이세요. 꿈에서 본 숫자나 갑자기 떠오른 특별한 기억을 번호에 반영해 보는 것이 좋습니다. 직관이 가장 예리해지는 시각을 활용하세요.'
+            },
+            '정인': {
+                name: '정인(正印) - 자애로운 조력과 안정적 성취',
+                flow: '나를 감싸 안아주는 따뜻하고 포용적인 기운이 가득한 날입니다. 윗사람이나 선배의 조언이 큰 힘이 되며, 마음의 평안 속에서 지혜로운 선택을 내릴 수 있는 수호천사의 보호를 받는 듯한 시기입니다.',
+                wealth: '안정적인 합격운과 문서운이 재물운을 견인합니다. 서두르지 않아도 행운이 제 발로 찾아오는 형국이며, 본인의 덕망과 정성이 하늘에 닿아 당첨이라는 축복으로 돌아오는 은혜로운 흐름입니다.',
+                secret: '가족이나 존경하는 분의 조언을 구하거나 그분들과 관련된 숫자를 활용해 보세요. 따뜻한 차 한 잔을 마시며 차분하게 생성한 번호가 큰 복을 담는 그릇이 될 것입니다.'
+            }
+        };
+
+        const details = tenGodDetails[tenGod] || { name: tenGod, flow: '우주의 기운이 조화롭게 흐르는 날입니다.', wealth: '재물운의 통로가 열리고 있습니다.', secret: '긍정적인 마음가짐이 행운을 부릅니다.' };
+
+        document.getElementById('insight-total').innerHTML = `
+            <div class="space-y-3">
+                <p class="text-accent font-bold text-sm border-b border-accent/20 pb-1">✨ ${details.name}</p>
+                <p>${details.flow}</p>
+                <p>이번 주 7일 중 <strong>${dayName}</strong>은 ${name}님의 일간과 가장 완벽한 <strong>${tenGod}</strong>의 합을 이루어, 우주의 행운 주파수를 수신하기에 가장 최적화된 상태가 됩니다.</p>
+            </div>
+        `;
+        document.getElementById('insight-wealth').innerHTML = `<p>${details.wealth}</p>`;
+        document.getElementById('insight-health').innerHTML = `<p>${details.secret}</p>`;
+    }
+
+    function startLottoRollingAnimation() {
+        const containers = [1,2,3,4,5].map(i => document.getElementById(`numberContainer${i}`));
+        containers.forEach(c => {
+            c.innerHTML = ''; for(let i=0; i<6; i++) {
+                const b = document.createElement('div'); b.className = 'lotto-ball rolling'; b.innerHTML = '<span>?</span>'; c.appendChild(b);
+            }
+        });
+        setTimeout(generateFinalNumbers, 1600);
+    }
+
+    function generateFinalNumbers() {
+        const createSet = (off) => {
+            const r = mulberry32(currentUserSeed + off); const s = new Set();
+            while(s.size < 6) s.add(Math.floor(r() * 45) + 1);
+            return Array.from(s).sort((a,b)=>a-b);
+        };
+        const sets = [77, 88, 99, 111, 222].map(off => createSet(off));
+        [1, 2, 3, 4, 5].forEach((idx) => {
+            const container = document.getElementById(`numberContainer${idx}`);
+            const balls = container.querySelectorAll('.lotto-ball');
+            sets[idx-1].forEach((n, i) => {
+                setTimeout(() => { balls[i].classList.remove('rolling'); balls[i].innerHTML = `<span>${String(n).padStart(2, '0')}</span>`; }, (idx-1) * 800 + (i * 150));
+            });
+        });
+        setTimeout(() => { document.getElementById('lottoStatusText').textContent = "주간 최고의 행운일에 맞춘 번호 조율이 완성되었습니다."; }, 4500);
+    }
+
+    function resetInterface() { location.reload(); }
+</script>
+</body>
+</html>
