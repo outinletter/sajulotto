@@ -1,0 +1,7 @@
+name = "sajulotto"
+main = ".artifacts/d8068cf9-a77c-4855-8973-4fe0cb5f891c/cloudflare_worker.js"
+compatibility_date = "2024-01-01"
+
+[vars]
+# API 키는 대시보드에서 설정하거나 wrangler secret으로 설정하는 것을 권장합니다.
+# DEEPSEEK_API_KEY = "..."

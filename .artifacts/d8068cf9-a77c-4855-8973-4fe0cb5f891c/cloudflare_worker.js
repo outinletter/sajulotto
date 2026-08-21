@@ -45,6 +45,16 @@ export default {
 
       const data = await response.json();
 
+      if (!response.ok) {
+        return new Response(JSON.stringify({
+          error: data.error || "DeepSeek API error",
+          status: response.status
+        }), {
+          status: response.status,
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        });
+      }
+
       return new Response(JSON.stringify(data), {
         headers: {
           ...corsHeaders,

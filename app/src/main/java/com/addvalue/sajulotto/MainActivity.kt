@@ -81,8 +81,8 @@ class SajuBridge(private val webView: WebView) {
                 "Error: ${e.message}"
             }
             withContext(Dispatchers.Main) {
-                val escapedResult = result.replace("'", "\\'").replace("\n", "\\n")
-                webView.evaluateJavascript("javascript:$callbackName('$escapedResult')", null)
+                val quotedResult = JSONObject.quote(result)
+                webView.evaluateJavascript("javascript:$callbackName($quotedResult)", null)
             }
         }
     }
@@ -107,12 +107,20 @@ class SajuBridge(private val webView: WebView) {
         return if (conn.responseCode == 200) {
             val response = conn.inputStream.bufferedReader().use { it.readText() }
             val jsonResponse = JSONObject(response)
-            jsonResponse.getJSONArray("choices")
-                .getJSONObject(0)
-                .getJSONObject("message")
-                .getString("content")
+            if (jsonResponse.has("choices")) {
+                jsonResponse.getJSONArray("choices")
+                    .getJSONObject(0)
+                    .getJSONObject("message")
+                    .getString("content")
+            } else if (jsonResponse.has("error")) {
+                val errorObj = jsonResponse.getJSONObject("error")
+                "AI 오류: ${errorObj.optString("message", "Unknown error")}"
+            } else {
+                "AI 응답 형식 오류: 'choices' 필드를 찾을 수 없습니다. (응답: $response)"
+            }
         } else {
-            "Worker 호출 실패: ${conn.responseCode} ${conn.responseMessage}"
+            val errorResponse = conn.errorStream?.bufferedReader()?.use { it.readText() } ?: ""
+            "Worker 호출 실패: ${conn.responseCode} ${conn.responseMessage}\n$errorResponse"
         }
     }
 }
