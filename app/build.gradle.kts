@@ -1,0 +1,75 @@
+import java.util.Properties
+
+plugins {
+    alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.compose)
+}
+
+val localProperties = Properties()
+val localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localProperties.load(localPropertiesFile.inputStream())
+}
+val deepseekKey = localProperties.getProperty("DEEPSEEK_API_KEY") ?: ""
+
+android {
+    namespace = "com.addvalue.sajulotto"
+    compileSdk = 37
+
+    defaultConfig {
+        applicationId = "com.addvalue.sajulotto"
+        minSdk = 23
+        targetSdk = 37
+        versionCode = 2
+        versionName = "1.0"
+
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        
+        buildConfigField("String", "DEEPSEEK_API_KEY", "\"$deepseekKey\"")
+    }
+
+    signingConfigs {
+        create("release") {
+            storeFile = file("D:/Data/Project/AndroidKeys/SajuLotto.jks")
+            // storePassword, keyAlias, keyPassword는 실제 값으로 변경이 필요합니다.
+            storePassword = "your_store_password"
+            keyAlias = "your_key_alias"
+            keyPassword = "your_key_password"
+        }
+    }
+
+    buildTypes {
+        release {
+            signingConfig = signingConfigs.getByName("release")
+            optimization {
+                enable = false
+            }
+        }
+    }
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
+    }
+    buildFeatures {
+        compose = true
+        buildConfig = true
+    }
+}
+
+dependencies {
+    implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.compose.material3)
+    implementation(libs.androidx.compose.ui)
+    implementation(libs.androidx.compose.ui.graphics)
+    implementation(libs.androidx.compose.ui.tooling.preview)
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.lifecycle.runtime.ktx)
+    testImplementation(libs.junit)
+    androidTestImplementation(platform(libs.androidx.compose.bom))
+    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
+    androidTestImplementation(libs.androidx.espresso.core)
+    androidTestImplementation(libs.androidx.junit)
+    debugImplementation(libs.androidx.compose.ui.test.manifest)
+    debugImplementation(libs.androidx.compose.ui.tooling)
+}
