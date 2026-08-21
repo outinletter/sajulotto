@@ -11,6 +11,7 @@ if (localPropertiesFile.exists()) {
     localProperties.load(localPropertiesFile.inputStream())
 }
 val deepseekKey = localProperties.getProperty("DEEPSEEK_API_KEY") ?: ""
+val workerUrl = localProperties.getProperty("WORKER_URL") ?: ""
 
 android {
     namespace = "com.addvalue.sajulotto"
@@ -26,6 +27,7 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         
         buildConfigField("String", "DEEPSEEK_API_KEY", "\"$deepseekKey\"")
+        buildConfigField("String", "WORKER_URL", "\"$workerUrl\"")
     }
 
     signingConfigs {
