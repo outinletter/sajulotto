@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>로또 번호 생성기</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#FAF7F2',
+                        accent: '#D4A373',
+                        soft: '#3A302E',
+                    },
+                    fontFamily: {
+                        sans: ['"Noto Sans KR"', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Noto Sans KR', sans-serif; }
+        .ball {
+            width: 45px;
+            height: 45px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            color: white;
+            font-weight: bold;
+            font-size: 1.2rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+        }
+        .ball-range-1 { background-color: #fbc02d; } /* 1-10 */
+        .ball-range-2 { background-color: #1976d2; } /* 11-20 */
+        .ball-range-3 { background-color: #d32f2f; } /* 21-30 */
+        .ball-range-4 { background-color: #7b1fa2; } /* 31-40 */
+        .ball-range-5 { background-color: #388e3c; } /* 41-45 */
+    </style>
+</head>
+<body class="bg-primary min-h-screen flex flex-col items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md text-center border border-gray-100">
+        <h1 class="text-2xl font-bold text-soft mb-6">행운의 로또 번호</h1>
+
+        <div id="number-container" class="flex flex-wrap justify-center gap-3 mb-8 min-h-[50px]">
+            <!-- 번호가 여기에 생성됩니다 -->
+            <p class="text-gray-400">버튼을 눌러 번호를 생성하세요</p>
+        </div>
+
+        <button onclick="generateLotto()"
+                class="w-full bg-accent hover:bg-[#c39262] text-white font-bold py-4 rounded-xl transition duration-200 transform active:scale-95 shadow-lg">
+            번호 생성하기
+        </button>
+    </div>
+
+    <script>
+        function generateLotto() {
+            const numbers = [];
+            while (numbers.length < 6) {
+                const rand = Math.floor(Math.random() * 45) + 1;
+                if (!numbers.includes(rand)) {
+                    numbers.push(rand);
+                }
+            }
+            numbers.sort((a, b) => a - b);
+
+            const container = document.getElementById('number-container');
+            container.innerHTML = '';
+
+            numbers.forEach(num => {
+                const ball = document.createElement('div');
+                ball.className = 'ball ' + getBallColorClass(num);
+                ball.innerText = num;
+                container.appendChild(ball);
+            });
+        }
+
+        function getBallColorClass(num) {
+            if (num <= 10) return 'ball-range-1';
+            if (num <= 20) return 'ball-range-2';
+            if (num <= 30) return 'ball-range-3';
+            if (num <= 40) return 'ball-range-4';
+            return 'ball-range-5';
+        }
+    </script>
+</body>
+</html>

@@ -2,6 +2,7 @@ import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
 }
 
@@ -12,15 +13,18 @@ if (localPropertiesFile.exists()) {
 }
 val deepseekKey = localProperties.getProperty("DEEPSEEK_API_KEY") ?: ""
 val workerUrl = localProperties.getProperty("WORKER_URL") ?: ""
+val storePasswordVal = localProperties.getProperty("RELEASE_STORE_PASSWORD") ?: "your_store_password"
+val keyAliasVal = localProperties.getProperty("RELEASE_KEY_ALIAS") ?: "your_key_alias"
+val keyPasswordVal = localProperties.getProperty("RELEASE_KEY_PASSWORD") ?: "your_key_password"
 
 android {
     namespace = "com.addvalue.sajulotto"
-    compileSdk = 37
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.addvalue.sajulotto"
         minSdk = 23
-        targetSdk = 37
+        targetSdk = 35
         versionCode = 2
         versionName = "1.0"
 
@@ -33,24 +37,25 @@ android {
     signingConfigs {
         create("release") {
             storeFile = file("D:/Data/Project/AndroidKeys/SajuLotto.jks")
-            // storePassword, keyAlias, keyPassword는 실제 값으로 변경이 필요합니다.
-            storePassword = "your_store_password"
-            keyAlias = "your_key_alias"
-            keyPassword = "your_key_password"
+            storePassword = storePasswordVal
+            keyAlias = keyAliasVal
+            keyPassword = keyPasswordVal
         }
     }
 
     buildTypes {
         release {
             signingConfig = signingConfigs.getByName("release")
-            optimization {
-                enable = false
-            }
+            isMinifyEnabled = false
+            isShrinkResources = false
         }
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
+    }
+    kotlinOptions {
+        jvmTarget = "11"
     }
     buildFeatures {
         compose = true

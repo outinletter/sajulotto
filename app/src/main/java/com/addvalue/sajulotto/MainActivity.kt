@@ -70,7 +70,7 @@ fun WebViewScreen(modifier: Modifier = Modifier) {
 
 class SajuBridge(private val webView: WebView) {
 
-    private val WORKER_URL = BuildConfig.WORKER_URL
+    private val workerUrl = BuildConfig.WORKER_URL
 
     @JavascriptInterface
     fun requestDeepSeekAI(prompt: String, callbackName: String) {
@@ -88,11 +88,11 @@ class SajuBridge(private val webView: WebView) {
     }
 
     private fun callWorkerAPI(prompt: String): String {
-        if (WORKER_URL.contains("your-worker-name")) {
+        if (workerUrl.contains("your-worker-name")) {
             return "Cloudflare Worker URL이 설정되지 않았습니다. local.properties에서 WORKER_URL을 설정해주세요."
         }
 
-        val url = URL(WORKER_URL)
+        val url = URL(workerUrl)
         val conn = url.openConnection() as HttpURLConnection
         conn.requestMethod = "POST"
         conn.setRequestProperty("Content-Type", "application/json")
