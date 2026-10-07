@@ -2,7 +2,6 @@ package com.addvalue.sajulotto
 
 import android.annotation.SuppressLint
 import android.os.Bundle
-import android.webkit.JavascriptInterface
 import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -16,15 +15,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
 import com.addvalue.sajulotto.ui.theme.SajuLottoTheme
-import com.addvalue.sajulotto.BuildConfig
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import org.json.JSONObject
-import java.io.OutputStreamWriter
-import java.net.HttpURLConnection
-import java.net.URL
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -61,66 +51,8 @@ fun WebViewScreen(modifier: Modifier = Modifier) {
                 }
                 webViewClient = WebViewClient()
                 webChromeClient = WebChromeClient()
-                addJavascriptInterface(SajuBridge(this), "AndroidBridge")
                 loadUrl("file:///android_asset/index.html")
             }
         }
     )
-}
-
-class SajuBridge(private val webView: WebView) {
-
-    private val workerUrl = BuildConfig.WORKER_URL
-
-    @JavascriptInterface
-    fun requestDeepSeekAI(prompt: String, callbackName: String) {
-        CoroutineScope(Dispatchers.IO).launch {
-            val result = try {
-                callWorkerAPI(prompt)
-            } catch (e: Exception) {
-                "Error: ${e.message}"
-            }
-            withContext(Dispatchers.Main) {
-                val quotedResult = JSONObject.quote(result)
-                webView.evaluateJavascript("javascript:$callbackName($quotedResult)", null)
-            }
-        }
-    }
-
-    private fun callWorkerAPI(prompt: String): String {
-        if (workerUrl.contains("your-worker-name")) {
-            return "Cloudflare Worker URL이 설정되지 않았습니다. local.properties에서 WORKER_URL을 설정해주세요."
-        }
-
-        val url = URL(workerUrl)
-        val conn = url.openConnection() as HttpURLConnection
-        conn.requestMethod = "POST"
-        conn.setRequestProperty("Content-Type", "application/json")
-        conn.doOutput = true
-
-        val jsonBody = JSONObject().apply {
-            put("prompt", prompt)
-        }
-
-        OutputStreamWriter(conn.outputStream).use { it.write(jsonBody.toString()) }
-
-        return if (conn.responseCode == 200) {
-            val response = conn.inputStream.bufferedReader().use { it.readText() }
-            val jsonResponse = JSONObject(response)
-            if (jsonResponse.has("choices")) {
-                jsonResponse.getJSONArray("choices")
-                    .getJSONObject(0)
-                    .getJSONObject("message")
-                    .getString("content")
-            } else if (jsonResponse.has("error")) {
-                val errorObj = jsonResponse.getJSONObject("error")
-                "AI 오류: ${errorObj.optString("message", "Unknown error")}"
-            } else {
-                "AI 응답 형식 오류: 'choices' 필드를 찾을 수 없습니다. (응답: $response)"
-            }
-        } else {
-            val errorResponse = conn.errorStream?.bufferedReader()?.use { it.readText() } ?: ""
-            "Worker 호출 실패: ${conn.responseCode} ${conn.responseMessage}\n$errorResponse"
-        }
-    }
 }

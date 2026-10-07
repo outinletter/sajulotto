@@ -193,8 +193,6 @@
                     <label class="block text-[11px] font-bold text-accent/80 mb-1.5 uppercase tracking-wider">양력/음력</label>
                     <div class="flex gap-2">
                         <label class="flex-1 flex items-center justify-center gap-1 cursor-pointer input-field py-3.5 rounded-xl text-xs"><input type="radio" name="calendar" value="S" checked class="accent-accent"> 양력</label>
-                        <label class="flex-1 flex items-center justify-center gap-1 cursor-pointer input-field py-3.5 rounded-xl text-xs"><input type="radio" name="calendar" value="L" class="accent-accent"> 음력</label>
-                        <label class="flex-1 flex items-center justify-center gap-1 cursor-pointer input-field py-3.5 rounded-xl text-xs"><input type="radio" name="calendar" value="LI" class="accent-accent"> 음력(윤달)</label>
                     </div>
                 </div>
                 <div>
@@ -382,8 +380,6 @@
 </div>
 
 <script>
-    const SERVICE_KEY = '8T%2FV79pamqQ%2Bwr4pQdRlcKF6772dzCiwbyc90iX1L1aRSliNgh0ceaYF74KbTjq9aKkoNZqJgmO8ftDWbx6nng%3D%3D';
-    const JEOL_NAMES = ['입춘', '경칩', '청명', '입하', '망종', '소서', '입추', '백로', '한로', '입동', '대설', '소한'];
 
     let radarChartInstance = null;
     let currentUserSeed = 0;
@@ -396,57 +392,8 @@
     const weekDays = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
 
     const SolarManager = {
-        cache: JSON.parse(localStorage.getItem('solarTermsDB') || '{}'),
-        lunarCache: JSON.parse(localStorage.getItem('lunarToSolarDB') || '{}'),
         defaultJeols: { '소한': 6, '입춘': 4, '경칩': 6, '청명': 5, '입하': 6, '망종': 6, '소서': 8, '입추': 8, '백로': 8, '한로': 9, '입동': 8, '대설': 7 },
-        async fetchYear(year) {
-            if (this.cache[year] && Object.keys(this.cache[year]).length >= 12) return this.cache[year];
-            const months = Array.from({length: 12}, (_, i) => i + 1);
-            const yearData = {};
-            await Promise.all(months.map(async (m) => {
-                try {
-                    const res = await fetch(`https://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService/get24DivisionsInfo?serviceKey=${SERVICE_KEY}&solYear=${year}&solMonth=${m.toString().padStart(2, '0')}&_type=json`);
-                    const data = await res.json();
-                    const items = data.response?.body?.items?.item;
-                    const processItem = (item) => {
-                        if (item && JEOL_NAMES.includes(item.dateName)) {
-                            yearData[item.dateName] = { date: item.locdate.toString(), time: item.kst.toString().padStart(4, '0') };
-                        }
-                    };
-                    if (Array.isArray(items)) items.forEach(processItem);
-                    else if (items) processItem(items);
-                } catch (e) { console.error(e); }
-            }));
-            if (Object.keys(yearData).length > 0) {
-                this.cache[year] = { ...this.cache[year], ...yearData };
-                localStorage.setItem('solarTermsDB', JSON.stringify(this.cache));
-            }
-            return yearData;
-        },
-        async convertLunarToSolar(year, month, day, isIntercalary) {
-            const key = `${year}${month.toString().padStart(2,'0')}${day.toString().padStart(2,'0')}${isIntercalary?'I':'S'}`;
-            if (this.lunarCache[key]) return this.lunarCache[key];
-            try {
-                const leap = isIntercalary ? '윤달' : '평달';
-                const res = await fetch(`https://apis.data.go.kr/B090041/openapi/service/LrsrCldInfoService/getLunarToSolarInfo?serviceKey=${SERVICE_KEY}&lunYear=${year}&lunMonth=${month.toString().padStart(2,'0')}&lunDay=${day.toString().padStart(2,'0')}&leapMonth=${leap}&_type=json`);
-                const data = await res.json();
-                const item = data.response?.body?.items?.item;
-                if (item) {
-                    const solar = { year: parseInt(item.solYear), month: parseInt(item.solMonth), day: parseInt(item.solDay) };
-                    this.lunarCache[key] = solar;
-                    localStorage.setItem('lunarToSolarDB', JSON.stringify(this.lunarCache));
-                    return solar;
-                }
-            } catch (e) { console.error(e); }
-            return null;
-        },
         getJeolDateTime(year, jeolName) {
-            const data = this.cache[year];
-            if (data && data[jeolName]) {
-                const d = data[jeolName].date;
-                const t = data[jeolName].time;
-                return new Date(d.substring(0,4), parseInt(d.substring(4,6))-1, d.substring(6,8), t.substring(0,2), t.substring(2,4));
-            }
             const day = this.defaultJeols[jeolName] || 5;
             const monthMap = { '소한': 0, '입춘': 1, '경칩': 2, '청명': 3, '입하': 4, '망종': 5, '소서': 6, '입추': 7, '백로': 8, '한로': 9, '입동': 10, '대설': 11 };
             return new Date(year, monthMap[jeolName], day, 12, 0);
@@ -494,7 +441,6 @@
         const name = nameInput || "익명";
         const birth = document.getElementById('inputBirth').value;
         const time = document.getElementById('inputTime').value;
-        const calType = document.querySelector('input[name="calendar"]:checked').value;
         const longitude = parseFloat(document.getElementById('inputCity').value);
 
         const digitsOnly = birth.replace(/\D/g, "");
@@ -509,21 +455,6 @@
 
         document.getElementById('inputPortal').style.display = 'none';
         document.getElementById('loadingState').classList.replace('hidden', 'flex');
-
-        if (calType === 'L' || calType === 'LI') {
-            const solar = await SolarManager.convertLunarToSolar(birthYear, birthMonth, birthDay, calType === 'LI');
-            if (!solar) {
-                alert("음력 날짜 변환 실패");
-                location.reload();
-                return;
-            }
-            birthYear = solar.year; birthMonth = solar.month; birthDay = solar.day;
-        }
-
-        const today = new Date();
-        await SolarManager.fetchYear(birthYear);
-        await SolarManager.fetchYear(birthYear - 1);
-        await SolarManager.fetchYear(today.getFullYear());
 
         let start = null;
         function animate(t) {

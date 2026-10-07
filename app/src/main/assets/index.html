@@ -2,7 +2,8 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>천기누설 : 사주와 로또의 만남</title>
 <link rel="icon" href="icons/sajulottoicon.png">
 <link rel="apple-touch-icon" href="icons/sajulottoicon.png">
@@ -10,51 +11,15 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="천기누설">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-<script src="https://cdn.tailwindcss.com"></script>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;700;900&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
-<script>
-    tailwind.config = {
-        theme: {
-            extend: {
-                colors: {
-                    primary: '#FAF7F2',
-                    secondary: '#A1B5D0',
-                    accent: '#D4A373',
-                    soft: '#3A302E',
-                    pastelGreen: '#CCD5AE',
-                    pastelRose: '#E8A598',
-                },
-                fontFamily: {
-                    serif: ['"Noto Serif KR"', 'serif'],
-                    sans: ['"Noto Sans KR"', 'sans-serif'],
-                },
-                animation: {
-                    'float-slow': 'float 6s ease-in-out infinite',
-                },
-                keyframes: {
-                    float: {
-                        '0%, 100%': { transform: 'translateY(0px)' },
-                        '50%': { transform: 'translateY(-8px)' },
-                    },
-                    slot: {
-                        '0%': { transform: 'translateY(-4px)', opacity: 0.6 },
-                        '100%': { transform: 'translateY(4px)', opacity: 0.9 },
-                    }
-                }
-            }
-        }
-    }
-</script>
+<script src="vendor/chart.umd.js"></script>
+<link rel="stylesheet" href="vendor/styles.css">
 <style>
     * { -webkit-tap-highlight-color: transparent; scroll-behavior: smooth; }
     body {
         background-color: #FAF7F2;
         color: #3A302E;
         background-image:
-            radial-gradient(circle at 50% 0%, rgba(224, 204, 190, 0.35) 0%, transparent 60%),
-            url('https://www.transparenttextures.com/patterns/papyrous.png');
+            radial-gradient(circle at 50% 0%, rgba(224, 204, 190, 0.35) 0%, transparent 60%);
         word-break: keep-all;
     }
     .glass-card {
@@ -152,16 +117,12 @@
     select option { background-color: #FAF7F2; color: #3A302E; padding: 10px; }
 
     /* Markdown Styles */
-    #aiResultText h1, #aiResultText h2, #aiResultText h3 {
         font-family: 'Noto Serif KR', serif;
         color: #D4A373;
         font-weight: bold;
         margin-top: 1rem;
         margin-bottom: 0.5rem;
     }
-    #aiResultText h3 { font-size: 1.25rem; }
-    #aiResultText p, #aiResultText ul, #aiResultText ol, #aiResultText li { font-size: 16px; margin-bottom: 0.75rem; }
-    #aiResultText strong { color: #A27244; }
 </style>
 </head>
 <body class="font-sans antialiased min-h-screen relative overflow-x-hidden">
@@ -171,21 +132,26 @@
         <p class="text-accent font-serif tracking-[0.2em] text-xs mb-2 font-bold">✧ 천 기 누 설 ✧</p>
         <h1 class="text-3xl md:text-5xl font-serif font-black text-soft mb-4 tracking-tight">사주와 로또의 만남</h1>
         <p class="text-soft/80 font-light text-sm md:text-lg leading-relaxed px-2">
-            이번 주 행운의 정점을 찾아 최적의 번호를 도출합니다.
+            나의 사주와 이번 주 번호 조합을 재미로 살펴보세요.
         </p>
     </header>
 
+<section class="glass-card rounded-2xl p-4 text-xs leading-relaxed mb-6" aria-label="서비스 및 개인정보 안내">
+<strong>재미로 즐기는 오프라인 사주 · 번호 생성</strong>
+<p>당첨을 예측하거나 당첨 확률 상승을 보장하지 않습니다. 복권 구매·판매·베팅 기능은 없습니다. 양력만 지원하며 절기 시각은 근사값입니다.</p>
+<p>입력한 이름·생년월일·성별·출생 시간·지역은 기기에서 계산하며 외부 서버로 전송하거나 저장하지 않습니다. 분석 화면을 닫으면 입력 정보는 사라집니다.</p>
+</section>
     <section id="inputPortal" class="glass-card rounded-2xl p-6 md:p-10 transition-all duration-500">
         <div class="mb-8 p-4 rounded-xl bg-accent/5 border border-accent/20 text-center">
             <p class="text-accent text-sm font-bold mb-1">📅 주간 운명 리듬 분석</p>
             <p class="text-soft/80 text-xs leading-relaxed">
-                일요일부터 토요일까지의 기류를 정밀 분석하여,<br>
-                귀하의 사주와 가장 합이 좋은 <span class="text-accent font-bold">최고의 행운 요일</span>을 찾아 번호를 생성합니다.
+                일요일부터 토요일까지의 기류를 참고용으로 살펴보고,<br>
+                사주 계산에 따른 <span class="text-accent font-bold">참고용 행운 요일</span>을 찾아 번호를 생성합니다.
             </p>
         </div>
         <div class="text-center mb-6">
             <h2 class="text-xl font-serif font-bold text-accent mb-1">운명의 정보 입력</h2>
-            <p class="text-soft/60 text-xs font-light">태어난 시각과 정보를 정확히 조율할수록 하늘의 맥박과 더 일치합니다.</p>
+            <p class="text-soft/60 text-xs font-light">양력 날짜를 입력하세요. 절기 경계는 근사값이며 전문 만세력과 다를 수 있습니다.</p>
         </div>
         <form id="destinyForm" class="space-y-5">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -203,11 +169,9 @@
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                    <label class="block text-[11px] font-bold text-accent/80 mb-1.5 uppercase tracking-wider">양력/음력</label>
+                    <label class="block text-[11px] font-bold text-accent/80 mb-1.5 uppercase tracking-wider">양력 (오프라인 분석)</label>
                     <div class="flex gap-2">
                         <label class="flex-1 flex items-center justify-center gap-1 cursor-pointer input-field py-3.5 rounded-xl text-xs"><input type="radio" name="calendar" value="S" checked class="accent-accent"> 양력</label>
-                        <label class="flex-1 flex items-center justify-center gap-1 cursor-pointer input-field py-3.5 rounded-xl text-xs"><input type="radio" name="calendar" value="L" class="accent-accent"> 음력</label>
-                        <label class="flex-1 flex items-center justify-center gap-1 cursor-pointer input-field py-3.5 rounded-xl text-xs"><input type="radio" name="calendar" value="LI" class="accent-accent"> 음력(윤달)</label>
                     </div>
                 </div>
                 <div>
@@ -272,7 +236,7 @@
 
         <section class="glass-card rounded-2xl p-4 md:p-6 text-center">
             <h3 class="text-lg font-serif font-bold text-accent mb-1">✨ <span id="luckyDayTitle"></span> 행운의 조합 (5대 세트)</h3>
-            <p id="lottoStatusText" class="text-[11px] text-soft/50 mb-6 italic">최적의 주파수 조율 중...</p>
+            <p id="lottoStatusText" class="text-[11px] text-soft/50 mb-6 italic">번호 조합 생성 중...</p>
             <div class="space-y-4 text-center">
                 <div class="p-4 rounded-xl bg-[#FAF1E6] border border-[#E9D5C3]/60 shadow-sm transition-all hover:shadow-md">
                     <p class="text-[10px] text-accent/80 font-bold mb-3 tracking-widest uppercase text-center">조합 A : 기운 보완형</p>
@@ -387,19 +351,6 @@
                     </div>
                 </div>
 
-                <!-- DeepSeek AI Special Analysis Section -->
-                <div id="aiAnalysisSection" class="mt-10 hidden">
-                    <div class="insight-card px-3 py-6 rounded-2xl bg-gradient-to-br from-[#fefaf3] to-[#f7f2e9] border-2 border-accent/40 shadow-xl relative overflow-hidden">
-                        <h4 class="text-accent text-xl font-serif font-black mb-5 flex items-center justify-center gap-3">
-                            <span class="w-8 h-8 flex items-center justify-center bg-accent/30 rounded-full text-[18px]">☯</span> 유료 심층 분석
-                        </h4>
-                        <div id="aiLoading" class="flex flex-col items-center py-8">
-                            <div class="text-3xl text-accent animate-pulse mb-3">● ● ●</div>
-                            <p class="text-[12px] text-soft/50 italic">AI가 당신의 심층 사주를 정밀 분석 중입니다...</p>
-                        </div>
-                        <div id="aiResultText" class="text-soft/90 leading-relaxed text-[16px] text-left space-y-3 hidden prose prose-stone prose-base max-w-none"></div>
-                    </div>
-                </div>
             </section>
         </div>
         <div class="text-center pt-8 pb-4">
@@ -409,13 +360,6 @@
 </div>
 
 <script>
-    // Marked.js options
-    marked.setOptions({
-        breaks: true,
-        gfm: true
-    });
-    const SERVICE_KEY = '8T%2FV79pamqQ%2Bwr4pQdRlcKF6772dzCiwbyc90iX1L1aRSliNgh0ceaYF74KbTjq9aKkoNZqJgmO8ftDWbx6nng%3D%3D';
-    const JEOL_NAMES = ['입춘', '경칩', '청명', '입하', '망종', '소서', '입추', '백로', '한로', '입동', '대설', '소한'];
 
     let radarChartInstance = null;
     let currentUserSeed = 0;
@@ -428,57 +372,8 @@
     const weekDays = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
 
     const SolarManager = {
-        cache: JSON.parse(localStorage.getItem('solarTermsDB') || '{}'),
-        lunarCache: JSON.parse(localStorage.getItem('lunarToSolarDB') || '{}'),
         defaultJeols: { '소한': 6, '입춘': 4, '경칩': 6, '청명': 5, '입하': 6, '망종': 6, '소서': 8, '입추': 8, '백로': 8, '한로': 9, '입동': 8, '대설': 7 },
-        async fetchYear(year) {
-            if (this.cache[year] && Object.keys(this.cache[year]).length >= 12) return this.cache[year];
-            const months = Array.from({length: 12}, (_, i) => i + 1);
-            const yearData = {};
-            await Promise.all(months.map(async (m) => {
-                try {
-                    const res = await fetch(`https://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService/get24DivisionsInfo?serviceKey=${SERVICE_KEY}&solYear=${year}&solMonth=${m.toString().padStart(2, '0')}&_type=json`);
-                    const data = await res.json();
-                    const items = data.response?.body?.items?.item;
-                    const processItem = (item) => {
-                        if (item && JEOL_NAMES.includes(item.dateName)) {
-                            yearData[item.dateName] = { date: item.locdate.toString(), time: item.kst.toString().padStart(4, '0') };
-                        }
-                    };
-                    if (Array.isArray(items)) items.forEach(processItem);
-                    else if (items) processItem(items);
-                } catch (e) { console.error(e); }
-            }));
-            if (Object.keys(yearData).length > 0) {
-                this.cache[year] = { ...this.cache[year], ...yearData };
-                localStorage.setItem('solarTermsDB', JSON.stringify(this.cache));
-            }
-            return yearData;
-        },
-        async convertLunarToSolar(year, month, day, isIntercalary) {
-            const key = `${year}${month.toString().padStart(2,'0')}${day.toString().padStart(2,'0')}${isIntercalary?'I':'S'}`;
-            if (this.lunarCache[key]) return this.lunarCache[key];
-            try {
-                const leap = isIntercalary ? '윤달' : '평달';
-                const res = await fetch(`https://apis.data.go.kr/B090041/openapi/service/LrsrCldInfoService/getLunarToSolarInfo?serviceKey=${SERVICE_KEY}&lunYear=${year}&lunMonth=${month.toString().padStart(2,'0')}&lunDay=${day.toString().padStart(2,'0')}&leapMonth=${leap}&_type=json`);
-                const data = await res.json();
-                const item = data.response?.body?.items?.item;
-                if (item) {
-                    const solar = { year: parseInt(item.solYear), month: parseInt(item.solMonth), day: parseInt(item.solDay) };
-                    this.lunarCache[key] = solar;
-                    localStorage.setItem('lunarToSolarDB', JSON.stringify(this.lunarCache));
-                    return solar;
-                }
-            } catch (e) { console.error(e); }
-            return null; // 변환 실패 시 음력을 양력으로 오인하지 않도록 null 반환
-        },
         getJeolDateTime(year, jeolName) {
-            const data = this.cache[year];
-            if (data && data[jeolName]) {
-                const d = data[jeolName].date;
-                const t = data[jeolName].time;
-                return new Date(d.substring(0,4), parseInt(d.substring(4,6))-1, d.substring(6,8), t.substring(0,2), t.substring(2,4));
-            }
             const day = this.defaultJeols[jeolName] || 5;
             const monthMap = { '소한': 0, '입춘': 1, '경칩': 2, '청명': 3, '입하': 4, '망종': 5, '소서': 6, '입추': 7, '백로': 8, '한로': 9, '입동': 10, '대설': 11 };
             return new Date(year, monthMap[jeolName], day, 12, 0);
@@ -524,15 +419,19 @@
     document.getElementById('destinyForm').addEventListener('submit', async function(e) {
         e.preventDefault();
         const nameInput = document.getElementById('inputName').value.trim();
-        const name = nameInput || "익명";
+        const name = (nameInput || "익명").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
         const birth = document.getElementById('inputBirth').value;
         const time = document.getElementById('inputTime').value;
-        const calType = document.querySelector('input[name="calendar"]:checked').value;
         const longitude = parseFloat(document.getElementById('inputCity').value);
 
         const digitsOnly = birth.replace(/\D/g, "");
         if(digitsOnly.length < 8) { alert("생년월일 8자리를 정확히 입력해주세요."); return; }
 
+        const y = Number(digitsOnly.slice(0, 4)), m = Number(digitsOnly.slice(4, 6)), d = Number(digitsOnly.slice(6, 8));
+        const checkDate = new Date(y, m - 1, d);
+        if (y < 1900 || checkDate.getFullYear() !== y || checkDate.getMonth() !== m - 1 || checkDate.getDate() !== d || checkDate > new Date()) {
+            alert("1900년 이후의 실제 생년월일을 입력해주세요. 미래 날짜는 사용할 수 없습니다."); return;
+        }
         const btn = document.getElementById('submitBtn');
         btn.disabled = true;
         btn.textContent = "주간 행운 리듬 분석 중...";
@@ -543,24 +442,6 @@
 
         document.getElementById('inputPortal').style.display = 'none';
         document.getElementById('loadingState').classList.replace('hidden', 'flex');
-
-        if (calType === 'L' || calType === 'LI') {
-            const solar = await SolarManager.convertLunarToSolar(birthYear, birthMonth, birthDay, calType === 'LI');
-            if (!solar) {
-                alert("음력 날짜 변환에 실패했습니다. 네트워크 상태를 확인하고 다시 시도해주세요.");
-                document.getElementById('loadingState').classList.replace('flex', 'hidden');
-                document.getElementById('inputPortal').style.display = '';
-                btn.disabled = false;
-                btn.textContent = "분석 및 번호 생성 ☯";
-                return;
-            }
-            birthYear = solar.year; birthMonth = solar.month; birthDay = solar.day;
-        }
-
-        const today = new Date();
-        await SolarManager.fetchYear(birthYear);
-        await SolarManager.fetchYear(birthYear - 1);
-        await SolarManager.fetchYear(today.getFullYear());
 
         let start = null;
         function animate(t) {
@@ -724,82 +605,9 @@
             startLottoRollingAnimation();
             writeWeeklyInsights(name, weekDays[bestDayIdx], luckyDay.tenGod, distribution, getElementOfCharacter(pillars[2].stem), luckyDay.branchRel);
 
-            // AI Analysis Call
-            performAIAnalysis(name, solarBirth, timeVal, pillars, distribution, luckyDay, weekDays[bestDayIdx]);
 
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }, 100);
-    }
-
-    // AI Analysis Logic with Caching
-    function performAIAnalysis(name, birth, time, pillars, distribution, luckyDay, dayName) {
-        // 앱 환경(AndroidBridge)이 아니면 AI 분석 섹션을 표시하지 않고 종료
-        if (typeof AndroidBridge === 'undefined') {
-            return;
-        }
-
-        const luckyDateStr = `${luckyDay.date.getFullYear()}-${String(luckyDay.date.getMonth()+1).padStart(2,'0')}-${String(luckyDay.date.getDate()).padStart(2,'0')}`;
-        const cacheKey = `AI_SAJU_${name}_${birth.year}${birth.month}${birth.day}_${luckyDateStr}`;
-        const cachedData = localStorage.getItem(cacheKey);
-
-        const aiSection = document.getElementById('aiAnalysisSection');
-        const aiLoading = document.getElementById('aiLoading');
-        const aiResult = document.getElementById('aiResultText');
-
-        aiSection.classList.remove('hidden');
-        aiLoading.classList.remove('hidden');
-        aiResult.classList.add('hidden');
-
-        if (cachedData) {
-            console.log("AI Analysis loaded from cache");
-            displayAIResult(cachedData);
-            return;
-        }
-
-        const prompt = `당신은 대한민국 최고의 사주 명리학 전문가이자, 지친 영혼을 달래주는 따뜻한 인생 상담가입니다. 아래 사주 정보를 바탕으로 행운일인 [${dayName}]에 대해 마음의 위로와 동기부여가 되는 상세한 상담을 제공해주세요.
-
-[분석 대상 정보]
-- 이름: ${name}
-- 사주팔자(四柱): [년:${pillars[0].stem}${pillars[0].branch}] [월:${pillars[1].stem}${pillars[1].branch}] [일:${pillars[2].stem}${pillars[2].branch}] [시:${pillars[3].stem}${pillars[3].branch}]
-- 오행분포: 목[${distribution.wood}], 화[${distribution.fire}], 토[${distribution.earth}], 금[${distribution.metal}], 수[${distribution.water}]
-- 금주 행운일: ${dayName} (${luckyDateStr})
-- 십성(十星): ${luckyDay.tenGod}
-- 지지관계: ${luckyDay.branchRel.type} (${luckyDay.branchRel.label})
-
-[출력 규칙 - 반드시 준수]
-1. **따뜻하고 공감적인 상담가 어조**를 사용하십시오. 사용자의 지친 마음(고민, 피로)을 먼저 어루만져주고 위로와 용기를 주는 내용을 핵심으로 합니다.
-2. 모든 한자는 예외 없이 '한글(한자)' 형식으로 표기하십시오. (예: 경(庚), 자(子))
-3. 마크다운(Markdown) 형식을 사용하여 제목, 강조 등을 섞어 읽기 편하게 작성하십시오.
-4. 분량은 약 800~1000자 내외로, 문장은 완결성 있게 마무리하십시오.
-
-[요청 사항]
-다음 항목을 포함하십시오.
-1. **당신을 위한 마음의 위로**: 사주에 나타난 기운을 통해 사용자의 고뇌와 피로를 공감하고 따뜻한 위로 건네기
-2. **다시 일어설 동기부여**: 타고난 기질과 이번 주 행운일(${dayName})의 기운이 사용자에게 주는 긍정적인 메시지
-3. **재물운과 삶의 여유**: 재물운의 흐름을 설명하되, 삶의 여유를 찾는 조언과 추천 숫자 기운
-4. **마음을 밝히는 비책**: 행운의 색상, 방향과 더불어 지친 심신을 달랠 수 있는 구체적인 행동(명상, 산책 등) 제안
-
-사용자가 이 글을 읽고 다시 힘을 얻을 수 있도록 진심을 담아 작성해주세요.`;
-
-        // Store the key in window for callback
-        window.currentAICacheKey = cacheKey;
-        AndroidBridge.requestDeepSeekAI(prompt, 'onAIAnalysisReceived');
-    }
-
-    window.onAIAnalysisReceived = function(result) {
-        if (result.startsWith("Error:") || result.includes("API 키")) {
-            displayAIResult(result);
-            return;
-        }
-        localStorage.setItem(window.currentAICacheKey, result);
-        displayAIResult(result);
-    };
-
-    function displayAIResult(text) {
-        document.getElementById('aiLoading').classList.add('hidden');
-        const resultEl = document.getElementById('aiResultText');
-        resultEl.innerHTML = marked.parse(text);
-        resultEl.classList.remove('hidden');
     }
 
     function drawRadarChart(data) {
@@ -824,73 +632,73 @@
             '비견': {
                 name: '비견(比肩) - 자아의 확립과 동료애',
                 flow: '나와 기운이 같은 에너지가 들어와 주관이 뚜렷해지고 추진력이 배가되는 날입니다. 망설이던 마음이 사라지고 본인의 의지대로 행운을 개척할 수 있는 강력한 자아의 힘이 느껴지는 시기입니다.',
-                wealth: '주변 지인이나 친구를 통해 행운의 팁을 얻을 수 있는 흐름입니다. 혼자 고민하기보다 주변의 긍정적인 파동과 함께할 때 재물운의 통로가 더 넓게 열리며, 본인의 선택에 확신을 가져도 좋은 때입니다.',
+                wealth: '재물운 해석은 오락용입니다. 지출 계획을 점검하고 일상의 작은 즐거움을 찾아보세요. 복권 당첨이나 재정적 이익을 예측하지 않습니다.',
                 secret: '오늘만큼은 본인의 직감을 전적으로 믿어보세요. 평소 즐겨 가던 장소나 익숙한 번호에서 예상치 못한 행운이 시작될 수 있습니다. 옷차림은 깔끔하고 자신감 있게 유지하는 것이 좋습니다.'
             },
             '겁재': {
                 name: '겁재(劫財) - 경쟁적 성취와 돌발적 기회',
                 flow: '강렬하고 역동적인 에너지가 소용돌이치는 날입니다. 경쟁 구도 속에서 예상치 못한 변수를 기회로 바꾸는 순발력이 빛을 발하며, 평범한 일상 속에 숨겨진 특별한 행운을 낚아채기에 최적화된 기류입니다.',
-                wealth: '하이리스크-하이리턴의 기운이 강하게 작용합니다. 평소보다 과감한 선택이 큰 결실로 이어질 수 있는 횡재수의 파동이 감지됩니다. 다만, 과욕은 금물이니 정해진 예산 내에서 승부수를 던지는 것이 유리합니다.',
+                wealth: '재물운 해석은 오락용입니다. 지출 계획을 점검하고 일상의 작은 즐거움을 찾아보세요. 복권 당첨이나 재정적 이익을 예측하지 않습니다.',
                 secret: '조금은 낯선 장소나 새로운 방식의 선택이 행운을 부릅니다. 늘 하던 방식에서 벗어나 우연히 마주친 번호나 순간적인 영감을 기록해 보세요. 경쟁적인 분위기가 오히려 행운의 촉매제가 됩니다.'
             },
             '식신': {
                 name: '식신(食神) - 풍요로운 결실과 의식주의 복',
                 flow: '우주의 자애로운 기운이 감돌아 마음이 편안해지고 의식주가 풍족해지는 흐름입니다. 창의적인 발상이 샘솟고 본인의 재능이 자연스럽게 행운의 결과물로 치환되는 온화하고도 실속 있는 시기입니다.',
-                wealth: '억지로 쫓지 않아도 재물이 따르는 "먹을 복"이 있는 날입니다. 꾸준히 정성을 들여온 일에서 예상치 못한 추가 수익이나 행운이 발생하며, 안정적인 파동 속에서 당첨의 확률이 서서히 무르익어 갑니다.',
+                wealth: '재물운 해석은 오락용입니다. 지출 계획을 점검하고 일상의 작은 즐거움을 찾아보세요. 복권 당첨이나 재정적 이익을 예측하지 않습니다.',
                 secret: '여유로운 마음가짐이 곧 행운의 주파수입니다. 맛있는 음식을 즐기거나 편안한 휴식을 취한 뒤 번호를 생성해 보세요. 즐거운 기분에서 나오는 긍정적인 에너지가 행운의 숫자를 끌어당깁니다.'
             },
             '상관': {
                 name: '상관(傷官) - 변화의 기회와 날카로운 직관',
                 flow: '기존의 틀을 깨고 새로운 시야를 갖게 되는 혁신적인 기운이 강해집니다. 두뇌 회전이 빨라지고 남들이 보지 못하는 틈새의 기운을 포착하는 능력이 극대화되어, 천기누설의 진가를 확인하기 좋은 날입니다.',
-                wealth: '재치 있는 아이디어나 순간적인 판단이 곧바로 재물적 이득으로 연결되는 흐름입니다. 고정관념에서 벗어난 변칙적인 선택이 의외의 큰 당첨으로 이어질 수 있으며, 본인의 표현력이 행운을 자극합니다.',
+                wealth: '재물운 해석은 오락용입니다. 지출 계획을 점검하고 일상의 작은 즐거움을 찾아보세요. 복권 당첨이나 재정적 이익을 예측하지 않습니다.',
                 secret: '화려한 소품이나 반짝이는 장신구가 행운을 증폭시킵니다. 본인의 개성을 드러내는 행동이 우주의 관심을 끌어모으게 됩니다. 평소에 생각지 못한 독특한 조합의 번호에 주목해 보세요.'
             },
             '편재': {
                 name: '편재(偏財) - 광활한 재물운과 횡재의 예감',
                 flow: '역마의 기운과 함께 큰 규모의 재물이 이동하는 역동적인 파동이 느껴지는 날입니다. 활동 범위가 넓어지고 시야가 탁월해지며, 평소보다 큰 꿈을 꾸게 만드는 우주의 행운 전파가 본인에게 집중됩니다.',
-                wealth: '로또와 같은 일확천금의 기운이 가장 강력하게 작용하는 시기입니다. 고정 수익 외의 영역에서 큰 폭의 재물 흐름이 포착되며, 공간의 이동이나 새로운 소식을 통해 당첨의 결정적인 힌트를 얻을 수 있습니다.',
+                wealth: '재물운 해석은 오락용입니다. 지출 계획을 점검하고 일상의 작은 즐거움을 찾아보세요. 복권 당첨이나 재정적 이익을 예측하지 않습니다.',
                 secret: '집에만 있기보다 가벼운 산책이나 외출을 통해 기운을 순환시키세요. 넓은 광장이나 탁 트인 곳에서 생성하는 번호가 우주의 거대한 재물 파동과 동조될 가능성이 매우 높습니다.'
             },
             '정재': {
                 name: '정재(正財) - 안정적인 수익과 성실의 보상',
                 flow: '차분하고 정밀한 기운이 지배하여 매사에 꼼꼼한 판단이 가능한 날입니다. 흩어져 있던 운의 조각들이 하나로 모여 견고한 행운의 기반을 형성하며, 노력한 만큼의 결실이 보장되는 신뢰도 높은 시기입니다.',
-                wealth: '철저한 분석과 관리가 재물운을 지탱합니다. 요행보다는 수치와 통계, 혹은 본인이 오랫동안 공들여 분석해온 데이터가 빛을 발하는 날입니다. 안정적인 파동 속에서 차곡차곡 쌓인 운이 당첨이라는 열매를 맺습니다.',
+                wealth: '재물운 해석은 오락용입니다. 지출 계획을 점검하고 일상의 작은 즐거움을 찾아보세요. 복권 당첨이나 재정적 이익을 예측하지 않습니다.',
                 secret: '주변을 깨끗이 청소하고 경건한 마음으로 번호를 생성하세요. 정리정돈된 환경이 정재의 기운을 강화하여 행운의 정합성을 높여줍니다. 차분한 클래식 음악이나 명상이 도움이 됩니다.'
             },
             '편관': {
                 name: '편관(偏官) - 명예로운 도전과 카리스마',
                 flow: '엄격하고 강인한 에너지가 본인을 단련하는 날입니다. 다소 긴장감이 느껴질 수 있으나, 이를 극복했을 때 주어지는 보상은 상상을 초월합니다. 어려움을 뚫고 얻어내는 승리의 기운이 매우 강한 시기입니다.',
-                wealth: '극적인 반전이 예상되는 재물운입니다. 위기 상황이나 압박 속에서 오히려 정신이 맑아지며, 과감하게 승부수를 던졌을 때 하늘의 뜻(天命)이 당첨 번호로 실체화되는 흐름이 감지됩니다.',
+                wealth: '재물운 해석은 오락용입니다. 지출 계획을 점검하고 일상의 작은 즐거움을 찾아보세요. 복권 당첨이나 재정적 이익을 예측하지 않습니다.',
                 secret: '본인을 절제하고 집중하는 태도가 필요합니다. 가벼운 운동으로 땀을 흘리거나 정신을 집중할 수 있는 활동 뒤에 번호를 확인하세요. 강한 정신력이 행운의 파동을 강력하게 붙잡아줍니다.'
             },
             '정관': {
                 name: '정관(正官) - 순리적 행운과 명예의 상승',
                 flow: '사회가 정한 규칙과 순리가 본인을 돕는 안정적인 기운입니다. 주변의 인정과 귀인의 도움이 따르며, 무리하지 않아도 일이 자연스럽게 풀려나가는 "운수 대통"의 평탄하고 밝은 흐름이 이어집니다.',
-                wealth: '정당한 권리와 문서상의 행운이 강하게 작용합니다. 복권이라는 문서가 나에게 행운을 가져다주는 정당한 도구가 되는 시기이며, 공적인 신뢰도가 높은 장소나 수단을 통해 얻은 번호가 길합니다.',
+                wealth: '재물운 해석은 오락용입니다. 지출 계획을 점검하고 일상의 작은 즐거움을 찾아보세요. 복권 당첨이나 재정적 이익을 예측하지 않습니다.',
                 secret: '바른 자세와 예의 바른 태도가 행운을 부릅니다. 타인에게 친절을 베풀거나 사회적으로 선한 일을 할 때 본인의 행운 지수도 함께 상승합니다. 순리에 따르는 마음으로 행운을 기다리세요.'
             },
             '편인': {
                 name: '편인(偏人) - 신비로운 직관과 영적인 통찰',
-                flow: '보이지 않는 영역의 지혜와 영감이 발달하는 신비로운 날입니다. 꿈이나 예감이 적중할 확률이 높고, 논리적으로 설명하기 힘든 초자연적인 행운의 신호가 본인의 무의식을 자극하는 흥미로운 시기입니다.',
-                wealth: '남들은 모르는 나만의 "비밀스러운 행운"이 숨어 있습니다. 우연히 들은 말 한마디, 문득 스쳐 지나가는 이미지 등이 재물운의 결정적인 단서가 됩니다. 비세속적이고 독창적인 감각이 당첨을 부릅니다.',
+                flow: '보이지 않는 영역의 지혜와 영감이 발달하는 신비로운 날입니다. 꿈이나 예감을 가볍게 살펴보며, 논리적으로 설명하기 힘든 초자연적인 행운의 신호가 본인의 무의식을 자극하는 흥미로운 시기입니다.',
+                wealth: '재물운 해석은 오락용입니다. 지출 계획을 점검하고 일상의 작은 즐거움을 찾아보세요. 복권 당첨이나 재정적 이익을 예측하지 않습니다.',
                 secret: '혼자만의 정적인 시간을 가지며 내면의 목소리에 귀를 기울이세요. 꿈에서 본 숫자나 갑자기 떠오른 특별한 기억을 번호에 반영해 보는 것이 좋습니다. 직관이 가장 예리해지는 시각을 활용하세요.'
             },
             '정인': {
                 name: '정인(正印) - 자애로운 조력과 안정적 성취',
                 flow: '나를 감싸 안아주는 따뜻하고 포용적인 기운이 가득한 날입니다. 윗사람이나 선배의 조언이 큰 힘이 되며, 마음의 평안 속에서 지혜로운 선택을 내릴 수 있는 수호천사의 보호를 받는 듯한 시기입니다.',
-                wealth: '안정적인 합격운과 문서운이 재물운을 견인합니다. 서두르지 않아도 행운이 제 발로 찾아오는 형국이며, 본인의 덕망과 정성이 하늘에 닿아 당첨이라는 축복으로 돌아오는 은혜로운 흐름입니다.',
+                wealth: '재물운 해석은 오락용입니다. 지출 계획을 점검하고 일상의 작은 즐거움을 찾아보세요. 복권 당첨이나 재정적 이익을 예측하지 않습니다.',
                 secret: '가족이나 존경하는 분의 조언을 구하거나 그분들과 관련된 숫자를 활용해 보세요. 따뜻한 차 한 잔을 마시며 차분하게 생성한 번호가 큰 복을 담는 그릇이 될 것입니다.'
             }
         };
 
-        const details = tenGodDetails[tenGod] || { name: tenGod, flow: '우주의 기운이 조화롭게 흐르는 날입니다.', wealth: '재물운의 통로가 열리고 있습니다.', secret: '긍정적인 마음가짐이 행운을 부릅니다.' };
+        const details = tenGodDetails[tenGod] || { name: tenGod, flow: '우주의 기운이 조화롭게 흐르는 날입니다.', wealth: '재물운 해석은 오락용입니다. 지출 계획을 점검하고 일상의 작은 즐거움을 찾아보세요. 복권 당첨이나 재정적 이익을 예측하지 않습니다.', secret: '긍정적인 마음가짐이 행운을 부릅니다.' };
 
         document.getElementById('insight-total').innerHTML = `
             <div class="space-y-3">
                 <p class="text-accent font-bold text-sm border-b border-accent/20 pb-1">✨ ${details.name}</p>
                 <p>${details.flow}</p>
-                <p>이번 주 7일 중 <strong>${dayName}</strong>은 ${name}님의 일간과 가장 완벽한 <strong>${tenGod}</strong>의 합을 이루어, 우주의 행운 주파수를 수신하기에 가장 최적화된 상태가 됩니다.</p>
-                <p>또한 일지와의 관계는 <strong>${branchRel.type}</strong>(${branchRel.label})으로, 사주 원국과의 지지 조합까지 함께 고려한 정통 명리 분석 결과입니다.</p>
+                <p>이번 주 7일 중 <strong>${dayName}</strong>은 ${name}님의 일간과 참고용 <strong>${tenGod}</strong>의 합을 이루어, 우주의 행운 주파수를 수신하기에 살펴보는 오락용 해석입니다.</p>
+                <p>또한 일지와의 관계는 <strong>${branchRel.type}</strong>(${branchRel.label})으로, 사주 원국과의 지지 조합까지 함께 고려한 근사 절기를 사용한 참고용 해석입니다.</p>
             </div>
         `;
         document.getElementById('insight-wealth').innerHTML = `<p>${details.wealth}</p>`;
@@ -921,7 +729,7 @@
                 setTimeout(() => { balls[i].classList.remove('rolling'); balls[i].innerHTML = `<span>${String(n).padStart(2, '0')}</span>`; }, (idx-1) * 800 + (i * 150));
             });
         });
-        setTimeout(() => { document.getElementById('lottoStatusText').textContent = "주간 최고의 행운일에 맞춘 번호 조율이 완성되었습니다."; }, 4500);
+        setTimeout(() => { document.getElementById('lottoStatusText').textContent = "참고용 번호 5세트가 생성되었습니다. 당첨을 예측하지 않습니다."; }, 4500);
     }
 
     function resetInterface() { location.reload(); }

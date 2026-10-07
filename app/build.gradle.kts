@@ -11,8 +11,6 @@ val localPropertiesFile = rootProject.file("local.properties")
 if (localPropertiesFile.exists()) {
     localProperties.load(localPropertiesFile.inputStream())
 }
-val deepseekKey = localProperties.getProperty("DEEPSEEK_API_KEY") ?: ""
-val workerUrl = localProperties.getProperty("WORKER_URL") ?: ""
 val storePasswordVal = localProperties.getProperty("RELEASE_STORE_PASSWORD") ?: "your_store_password"
 val keyAliasVal = localProperties.getProperty("RELEASE_KEY_ALIAS") ?: "your_key_alias"
 val keyPasswordVal = localProperties.getProperty("RELEASE_KEY_PASSWORD") ?: "your_key_password"
@@ -30,8 +28,6 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         
-        buildConfigField("String", "DEEPSEEK_API_KEY", "\"$deepseekKey\"")
-        buildConfigField("String", "WORKER_URL", "\"$workerUrl\"")
     }
 
     signingConfigs {
