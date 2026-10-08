@@ -45,5 +45,18 @@ final class SajuLottoUITests: XCTestCase {
         app.tabBars.buttons["안내"].tap()
         XCTAssertTrue(app.staticTexts["개인정보 처리 안내"].waitForExistence(timeout: 5), app.debugDescription)
         capture("05-개인정보안내")
+        app.tabBars.buttons["분석"].tap()
+        app.buttons["AI 해석"].tap()
+        XCTAssertTrue(app.buttons["동의하고 AI 해석 요청"].waitForExistence(timeout: 5))
+        app.buttons["취소"].tap()
+        XCTAssertFalse(app.staticTexts["aiResultText"].exists)
+        app.buttons["AI 해석"].tap()
+        app.buttons["동의하고 AI 해석 요청"].tap()
+        let resultText = app.staticTexts["aiResultText"]
+        let ready = expectation(for: NSPredicate(format: "exists == true AND label.length > 0"), evaluatedWith: resultText)
+        wait(for: [ready], timeout: 100)
+        XCTAssertFalse(resultText.label.contains("실패") || resultText.label.contains("받지 못") || resultText.label.contains("먼저"), resultText.label)
+        capture("06-AI해석")
+
     }
 }

@@ -27,6 +27,58 @@ final class ReportStore: ObservableObject {
     let webView: WKWebView
     @Published var message = ""
     @Published var showMessage = false
+    @Published var showAIConsent = false
+    @Published var showAIResult = false
+    @Published var aiText = ""
+    @Published var aiLoading = false
+    private var aiTask: Task<Void, Never>?
+    func requestAI() {
+        guard !aiLoading else { return }
+        guard let value = Bundle.main.object(forInfoDictionaryKey: "DeepSeekProxyURL") as? String,
+              let url = URL(string: value), url.scheme == "https", url.host != nil else {
+            message = "AI 서버 주소가 설정되지 않았습니다."; showMessage = true; return
+        }
+        aiText = ""; aiLoading = true; showAIResult = true
+        aiTask = Task { [weak self] in
+            guard let self else { return }
+            defer { self.aiLoading = false }
+            do {
+                let value = try await self.webView.evaluateJavaScript(#"""
+                (() => {
+                    if (document.getElementById('dashboard').classList.contains('hidden')) return null;
+                    const pillars = ['year','month','day','hour'].map(p => document.getElementById('saju-'+p+'-hanja').innerText.replace(/\n/g, ''));
+                    const elements = ['wood','fire','earth','metal','water'].map(p => document.getElementById('dist-'+p).innerText);
+                    return '사주팔자(년월일시): '+pillars.join(', ')+'; 오행(목화토금수): '+elements.join(', ')+'; 참고 요일: '+document.getElementById('bestDayInfo').innerText;
+                })()
+                """#)
+                guard let details = value as? String else {
+                    self.aiText = "먼저 사주 분석을 완료해주세요."; return
+                }
+                let prompt = "오락용 사주 해석을 한국어로 800자 이내로 작성하세요. 한자는 한글과 함께 표기하고 일상적인 휴식과 동기부여를 제안하세요. 복권 당첨·확률 상승·재정적 이익을 예측하거나 보장하지 말고 의료·투자 조언을 하지 마세요. 불확실한 AI 생성 해석임을 밝히세요.\n" + details
+                var request = URLRequest(url: url)
+                request.httpMethod = "POST"; request.timeoutInterval = 90
+                request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+                request.httpBody = try JSONSerialization.data(withJSONObject: ["prompt": prompt])
+                let session = URLSession(configuration: .ephemeral)
+                defer { session.invalidateAndCancel() }
+                let (data, response) = try await session.data(for: request)
+                try Task.checkCancellation()
+                guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode),
+                      let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+                      let choices = json["choices"] as? [[String: Any]],
+                      let message = choices.first?["message"] as? [String: Any],
+                      let text = message["content"] as? String, !text.isEmpty else {
+                    self.aiText = "AI 서버 응답을 받지 못했습니다. 잠시 후 다시 시도해주세요."; return
+                }
+                self.aiText = text
+            } catch is CancellationError {
+                self.aiText = ""
+            } catch {
+                if !Task.isCancelled { self.aiText = "AI 연결에 실패했습니다. 인터넷 연결을 확인하고 다시 시도해주세요." }
+            }
+        }
+    }
+    func cancelAI() { aiTask?.cancel(); aiTask = nil; aiText = "" }
     init() {
         let config = WKWebViewConfiguration()
         config.websiteDataStore = .nonPersistent()
@@ -97,13 +149,35 @@ struct AnalysisWebView: UIViewRepresentable {
                         .navigationBarTitleDisplayMode(.inline)
                         .toolbar {
                             ToolbarItem(placement: .topBarLeading) {
-                                Button("새 분석", systemImage: "arrow.clockwise") { analysis.webView.reload() }
+                                Button("새 분석", systemImage: "arrow.clockwise") { analysis.cancelAI(); analysis.webView.reload() }
                             }
-                            ToolbarItem(placement: .topBarTrailing) {
+                            ToolbarItemGroup(placement: .topBarTrailing) {
+                                Button("AI 해석", systemImage: "sparkles") { analysis.showAIConsent = true }.disabled(analysis.aiLoading)
                                 Button("번호 저장", systemImage: "bookmark") { analysis.save(to: store) }
                             }
                         }
                         .alert("안내", isPresented: $analysis.showMessage) { Button("확인", role: .cancel) {} } message: { Text(analysis.message) }
+                        .confirmationDialog("AI 분석 서비스로 정보 전송", isPresented: $analysis.showAIConsent, titleVisibility: .visible) {
+                            Button("동의하고 AI 해석 요청") { analysis.requestAI() }
+                            Button("취소", role: .cancel) {}
+                        } message: {
+                            Text("계산된 사주팔자·오행 분포·참고 요일을 앱의 Cloudflare 서버와 외부 AI 분석 서비스에 전송하여 AI 해석을 받습니다. 이름·생년월일·지역은 전송하지 않습니다. 서버는 연결 IP를 확인할 수 있으며 처리·보관은 각 서비스 정책을 따릅니다. 동의하지 않아도 기본 분석과 번호 생성은 이용할 수 있습니다.")
+                        }
+                        .sheet(isPresented: $analysis.showAIResult, onDismiss: { analysis.cancelAI() }) {
+                            NavigationStack {
+                                ScrollView {
+                                    VStack(alignment: .leading, spacing: 20) {
+                                        Text("AI 생성 해석은 오류가 있을 수 있으며 당첨이나 재정적 이익을 예측하지 않습니다.").font(.footnote).foregroundStyle(.secondary)
+                                        if analysis.aiLoading { ProgressView("AI 해석을 요청하고 있습니다…") }
+                                        Text(analysis.aiText).textSelection(.enabled).accessibilityIdentifier("aiResultText")
+                                        Link("AI 제공업체 개인정보 처리방침", destination: URL(string: "https://cdn.deepseek.com/policies/en-US/deepseek-privacy-policy.html")!)
+                                        Link("Cloudflare 개인정보 처리방침", destination: URL(string: "https://www.cloudflare.com/privacypolicy/")!)
+                                    }.padding()
+                                }.navigationTitle("AI 해석").toolbar {
+                                    Button("닫기") { analysis.showAIResult = false }
+                                }
+                            }
+                        }
                 }.tabItem { Label("분석", systemImage: "sparkles") }
                 NavigationStack {
                     List {
@@ -134,9 +208,9 @@ struct AnalysisWebView: UIViewRepresentable {
                             Text("양력만 지원합니다. 절기 경계는 근사값이므로 전문 만세력과 결과가 다를 수 있습니다. 중요한 의사결정의 근거로 사용하지 마세요.")
                         }
                         Section("개인정보 처리 안내") {
-                            Text("입력한 이름, 생년월일, 성별, 출생 시간과 지역은 기기 안에서만 계산하며 저장하거나 외부 서버로 전송하지 않습니다. 새 분석 또는 앱 종료 시 사라집니다.")
+                            Text("기본 사주 분석과 번호 생성은 기기 안에서 계산합니다. 이름, 생년월일, 성별, 출생 시간과 지역은 저장하지 않으며 새 분석 또는 앱 종료 시 사라집니다. AI 해석 요청 시에만 별도 동의를 받아 계산된 사주팔자·오행 분포·참고 요일을 Cloudflare 서버와 외부 AI 분석 서비스에 전송합니다. 연결 IP와 전송 정보의 처리·보관은 각 서비스 정책을 따릅니다.")
                             Text("직접 저장한 행운 요일과 번호는 기기에 보관되며 운영체제의 기기 백업에 포함될 수 있습니다. 기록에서 삭제할 수 있습니다. 이름과 생년월일은 저장하지 않습니다.")
-                            Text("공유 버튼을 사용하면 선택한 앱에 번호가 전달됩니다. 광고, 추적, 분석 SDK 및 외부 API를 사용하지 않습니다.")
+                            Text("공유 버튼을 사용하면 선택한 앱에 번호가 전달됩니다. 광고와 추적 SDK는 사용하지 않습니다. AI 해석에는 인터넷 연결과 AI 분석 API를 사용합니다. AI 결과는 앱에 저장하지 않습니다.")
                         }
                         Section("오픈소스 고지") {
                             Text("Chart.js 4.4.8 · Tailwind CSS — MIT License. 전체 라이선스는 앱 번들에 포함되어 있습니다.")
