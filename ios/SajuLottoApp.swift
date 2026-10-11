@@ -51,20 +51,22 @@ final class ReportStore: ObservableObject {
                     if (document.getElementById('dashboard').classList.contains('hidden')) return null;
                     const pillars = ['year','month','day','hour'].map(p => document.getElementById('saju-'+p+'-hanja').innerText.replace(/\n/g, ''));
                     const elements = ['wood','fire','earth','metal','water'].map(p => document.getElementById('dist-'+p).innerText);
-                    return '사주팔자(년월일시): '+pillars.join(', ')+'; 오행(목화토금수): '+elements.join(', ')+'; 참고 요일: '+document.getElementById('bestDayInfo').innerText;
+                    return '사주팔자(년월일시): '+pillars.join(', ')+'; 오행(목화토금수): '+elements.join(', ')+'; 참고 요일: '+document.getElementById('bestDayInfo').innerText+'; 주간 비교 및 참고 번호: '+JSON.stringify(window.sajuWeeklyContext);
                 })()
                 """#)
                 guard let details = value as? String else {
                     self.aiText = "먼저 사주 분석을 완료해주세요."; return
                 }
                 let prompt = """
-                당신은 한국 전통 명리학을 설명하는 편집자입니다. 아래 계산 결과를 바탕으로 이번 주에 참고하기 가장 좋은 요일과 시간대 한 가지를 먼저 선택하고, 그 선택의 근거를 오행 균형과 일간의 관계로 설명하세요. 특정 사건·복권 당첨·확률 상승·재정적 이익을 예측하거나 보장하지 말고, 의료·법률·투자 조언도 하지 마세요. 운세는 오락과 자기성찰을 위한 참고라는 문장을 마지막에 포함하세요.
+                당신은 한국 전통 명리학을 설명하는 편집자입니다. 아래 계산 결과를 바탕으로 한국 시간 일요일 00:00부터 토요일 19:35까지의 7일 비교 점수를 모두 검토하세요. 전달된 최고 점수의 선택 요일을 유지하고 토요일 시간 제안은 19:35 이전으로 제한하세요. 해당 요일과 시간대를 먼저 설명하고, 그 선택의 근거를 오행 균형과 일간의 관계로 설명하세요. 특정 사건·복권 당첨·확률 상승·재정적 이익을 예측하거나 보장하지 말고, 의료·법률·투자 조언도 하지 마세요. 운세는 오락과 자기성찰을 위한 참고라는 문장을 마지막에 포함하세요.
 
                 반드시 한국어 Markdown으로 1,500~2,000자 분량을 작성하세요. 다음 형식을 지키세요:
                 # 이번 주 핵심 흐름
                 ## 가장 추천하는 요일과 시간대
                 ## 사주 구조와 오행 균형
                 ## 일·관계·휴식에 대한 실천 제안
+                ## 사주 기반 참고 번호 5세트
+                전달된 numberSets의 5세트를 그대로 표시하고 부족한 오행 보완에 사용한 상징적 숫자 규칙(끝자리 1·6 수, 2·7 화, 3·8 목, 4·9 금, 5·0 토)을 설명하세요. 번호를 바꾸거나 당첨 가능성이 더 높다고 표현하지 마세요.
                 ## 이번 주 체크리스트
                 각 섹션은 구체적인 근거와 예시를 포함하고, 굵은 글씨와 글머리표를 적절히 사용하세요. 한자 용어는 한글 풀이를 함께 쓰고, 불확실한 AI 생성 해석임을 밝혀주세요.
 

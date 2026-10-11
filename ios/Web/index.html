@@ -145,7 +145,7 @@
         <div class="mb-8 p-4 rounded-xl bg-accent/5 border border-accent/20 text-center">
             <p class="text-accent text-sm font-bold mb-1">📅 주간 운명 리듬 분석</p>
             <p class="text-soft/80 text-xs leading-relaxed">
-                일요일부터 토요일까지의 기류를 참고용으로 살펴보고,<br>
+                한국 시간 일요일부터 토요일 19:35까지의 기류를 참고용으로 살펴보고,<br>
                 사주 계산에 따른 <span class="text-accent font-bold">참고용 행운 요일</span>을 찾아 번호를 생성합니다.
             </p>
         </div>
@@ -381,10 +381,11 @@
     };
 
     function getThisWeekInfo() {
-        const today = new Date();
+        const today = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Seoul' }));
         const currentDay = today.getDay(); // 0:일, 1:월, ... 6:토
         const sunday = new Date(today);
         sunday.setDate(today.getDate() - currentDay);
+        sunday.setHours(0, 0, 0, 0);
 
         const weekDates = [];
         for (let i = 0; i <= 6; i++) {
@@ -585,10 +586,11 @@
 
         const luckyDay = dailyScores[bestDayIdx];
         const luckyDateStr = `${luckyDay.date.getFullYear()}-${String(luckyDay.date.getMonth()+1).padStart(2,'0')}-${String(luckyDay.date.getDate()).padStart(2,'0')}`;
-        currentUserSeed = generateSeed(name, luckyDateStr, timeVal, luckyDateStr);
+        currentUserSeed = generateSeed('', solarBirth, timeVal, luckyDateStr + JSON.stringify(distribution));
+        window.sajuWeeklyContext = { period: '한국 시간 일요일 00:00부터 토요일 19:35까지 (20:35경 추첨 기준 1시간 전; 방송 일정 변경 가능)', days: dailyScores.map((d, i) => ({ day: weekDays[i], date: `${d.date.getFullYear()}-${d.date.getMonth()+1}-${d.date.getDate()}`, score: d.score, tenGod: d.tenGod, relation: d.branchRel })), selectedDay: weekDays[bestDayIdx], selectedDate: luckyDateStr, preferredElements: weakestEls };
 
         document.getElementById('displayUser').textContent = name;
-        document.getElementById('bestDayInfo').textContent = `${weekDays[bestDayIdx]} (${luckyDateStr})`;
+        document.getElementById('bestDayInfo').textContent = `${weekDays[bestDayIdx]} (${luckyDateStr}) · 분석 마감 토요일 19:35(KST)`;
         document.getElementById('luckyDayTitle').textContent = weekDays[bestDayIdx];
 
         ['year', 'month', 'day', 'hour'].forEach((p, i) => {
@@ -718,10 +720,19 @@
     function generateFinalNumbers() {
         const createSet = (off) => {
             const r = mulberry32(currentUserSeed + off); const s = new Set();
-            while(s.size < 6) s.add(Math.floor(r() * 45) + 1);
+            const preferred = window.sajuWeeklyContext.preferredElements;
+            const elementCycle = ['water', 'fire', 'wood', 'metal', 'earth'];
+            while (s.size < 6) {
+                const candidates = Array.from({length: 45}, (_, i) => i + 1).filter(n => !s.has(n));
+                const weights = candidates.map(n => preferred.includes(elementCycle[(n - 1) % 5]) ? 2 : 1);
+                let pick = r() * weights.reduce((a, b) => a + b, 0);
+                const index = weights.findIndex(w => (pick -= w) < 0);
+                s.add(candidates[index]);
+            }
             return Array.from(s).sort((a,b)=>a-b);
         };
         const sets = [77, 88, 99, 111, 222].map(off => createSet(off));
+        window.sajuWeeklyContext.numberSets = sets;
         [1, 2, 3, 4, 5].forEach((idx) => {
             const container = document.getElementById(`numberContainer${idx}`);
             const balls = container.querySelectorAll('.lotto-ball');
