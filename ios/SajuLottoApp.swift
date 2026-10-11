@@ -32,9 +32,6 @@ final class ReportStore: ObservableObject {
     @Published var aiText = ""
     @Published var aiLoading = false
     private var aiTask: Task<Void, Never>?
-    var aiMarkdown: AttributedString {
-        (try? AttributedString(markdown: aiText)) ?? AttributedString(aiText)
-    }
     func requestAI() {
         guard !aiLoading else { return }
         guard let value = Bundle.main.object(forInfoDictionaryKey: "DeepSeekProxyURL") as? String,
@@ -60,7 +57,7 @@ final class ReportStore: ObservableObject {
                 let prompt = """
                 당신은 한국 전통 명리학을 설명하는 편집자입니다. 아래 계산 결과를 바탕으로 한국 시간 일요일 00:00부터 토요일 19:35까지의 7일 비교 점수를 모두 검토하세요. 전달된 최고 점수의 선택 요일을 유지하고 토요일 시간 제안은 19:35 이전으로 제한하세요. 해당 요일과 시간대를 먼저 설명하고, 그 선택의 근거를 오행 균형과 일간의 관계로 설명하세요. 특정 사건·복권 당첨·확률 상승·재정적 이익을 예측하거나 보장하지 말고, 의료·법률·투자 조언도 하지 마세요. 운세는 오락과 자기성찰을 위한 참고라는 문장을 마지막에 포함하세요.
 
-                반드시 한국어 Markdown으로 1,500~2,000자 분량을 작성하세요. 다음 형식을 지키세요:
+                반드시 한국어 Markdown으로 2,000~2,600자 분량을 작성하세요. 전문 교양 잡지의 해설 기사처럼 정확하고 쉽게 쓰세요. 문단은 2~3문장으로 짧게 쓰고 문단 사이에는 빈 줄을 넣으세요. 제목과 목록 항목은 각각 별도 줄에 쓰세요. 표와 코드 블록은 사용하지 마세요. 내부 변수명(numberSets 등)과 지시문은 독자에게 노출하지 마세요. 일간·십성·합·충 등 용어는 처음 나올 때 쉬운 뜻을 설명하고, 계산 근거 → 전통적 해석 → 생활 예시 순서로 연결하세요. 오행 개수만으로 신강·신약이나 용신을 확정하지 말고 절기·출생 시간의 한계를 설명하세요. 출생 시간이 없으면 시주 해석을 하지 마세요. 날짜별 간지·관계를 임의로 만들지 말고 입력 자료에 있는 값만 사용하세요. 각 번호 세트는 별도 글머리표로 표시하세요. 다음 형식을 지키세요:
                 # 이번 주 핵심 흐름
                 ## 가장 추천하는 요일과 시간대
                 ## 사주 구조와 오행 균형
@@ -186,11 +183,11 @@ struct AnalysisWebView: UIViewRepresentable {
                                     VStack(alignment: .leading, spacing: 20) {
                                         Text("AI 생성 해석은 오류가 있을 수 있으며 당첨이나 재정적 이익을 예측하지 않습니다.").font(.footnote).foregroundStyle(.secondary)
                                         if analysis.aiLoading { ProgressView("AI 해석을 요청하고 있습니다…") }
-                                        Text(analysis.aiMarkdown).textSelection(.enabled).accessibilityIdentifier("aiResultText")
+                                        AIArticleView(markdown: analysis.aiText).accessibilityIdentifier("aiResultText")
                                         Link("AI 제공업체 개인정보 처리방침", destination: URL(string: "https://cdn.deepseek.com/policies/en-US/deepseek-privacy-policy.html")!)
                                         Link("Cloudflare 개인정보 처리방침", destination: URL(string: "https://www.cloudflare.com/privacypolicy/")!)
-                                    }.padding()
-                                }.navigationTitle("AI 해석").toolbar {
+                                    }.padding(.horizontal, 24).padding(.vertical, 28)
+                                }.background(Color(uiColor: .systemGroupedBackground)).navigationTitle("AI 해석").navigationBarTitleDisplayMode(.inline).toolbar {
                                     Button("닫기") { analysis.showAIResult = false }
                                 }
                             }
@@ -236,5 +233,42 @@ struct AnalysisWebView: UIViewRepresentable {
                 }.tabItem { Label("안내", systemImage: "info.circle") }
             }.tint(Color(red: 0.63, green: 0.45, blue: 0.27))
         }
+    }
+}
+
+// Render blocks separately: a single AttributedString loses Markdown paragraph layout.
+private struct AIArticleView: View {
+    let markdown: String
+    private var blocks: [String] {
+        markdown.replacingOccurrences(of: "\r\n", with: "\n")
+            .components(separatedBy: "\n").map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
+    }
+    private func inline(_ text: String) -> AttributedString {
+        (try? AttributedString(markdown: text, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace))) ?? AttributedString(text)
+    }
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            ForEach(Array(blocks.enumerated()), id: \.offset) { _, block in
+                if block.hasPrefix("# ") || block.hasPrefix("## ") || block.hasPrefix("### ") {
+                    Text(inline(String(block.drop(while: { $0 == "#" || $0 == " " }))))
+                        .font(block.hasPrefix("# ") ? .title.bold() : .title2.bold())
+                        .padding(.top, 14).fixedSize(horizontal: false, vertical: true)
+                        .accessibilityAddTraits(.isHeader)
+                } else if block.hasPrefix("- ") || block.hasPrefix("* ") {
+                    HStack(alignment: .top, spacing: 12) {
+                        Text("•").foregroundStyle(.secondary)
+                        Text(inline(String(block.dropFirst(2)))).fixedSize(horizontal: false, vertical: true)
+                    }
+                    .padding(14).frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))
+                } else {
+                    Text(inline(block)).fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+        .font(.system(.body, design: .serif)).lineSpacing(7)
+        .frame(maxWidth: 640, alignment: .leading).frame(maxWidth: .infinity)
+        .textSelection(.enabled)
     }
 }
