@@ -31,15 +31,15 @@ export default {
           messages: [
             {
               role: "system",
-              content: "당신은 사주 명리학 전문가이자 로또 번호 분석가입니다. 친절하고 신비로운 톤으로 답변하세요."
+              content: "전달된 사주 계산 근거와 전통적 해석을 구분하여 설명하세요. 계산되지 않은 대운·용신·격국이나 당첨·질병·재정적 이익을 만들어 예측하지 마세요. 짧은 문단과 독립된 Markdown 제목으로 읽기 쉽게 작성하세요."
             },
             {
               role: "user",
               content: prompt
             }
           ],
-          temperature: 0.7,
-          max_tokens: 1000
+          temperature: 0.3,
+          max_tokens: 3500
         })
       });
 

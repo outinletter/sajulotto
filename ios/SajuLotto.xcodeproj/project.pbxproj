@@ -12,6 +12,8 @@
 		A00000000000000000000017 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000008 /* Assets.xcassets */; };
 		A00000000000000000000018 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000009 /* PrivacyInfo.xcprivacy */; };
 		A00000000000000000000038 /* SajuLottoUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000031 /* SajuLottoUITests.swift */; };
+		B00000000000000000000042 /* ReflectionModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000040 /* ReflectionModels.swift */; };
+		B00000000000000000000043 /* ReflectionViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000041 /* ReflectionViews.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -32,6 +34,8 @@
 		A00000000000000000000010 /* SajuLotto.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SajuLotto.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A00000000000000000000031 /* SajuLottoUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SajuLottoUITests.swift; sourceTree = "<group>"; };
 		A00000000000000000000032 /* SajuLottoUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SajuLottoUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		B00000000000000000000040 /* ReflectionModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReflectionModels.swift; sourceTree = "<group>"; };
+		B00000000000000000000041 /* ReflectionViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReflectionViews.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -55,6 +59,8 @@
 		A00000000000000000000003 = {
 			isa = PBXGroup;
 			children = (
+				B00000000000000000000040 /* ReflectionModels.swift */,
+				B00000000000000000000041 /* ReflectionViews.swift */,
 				A00000000000000000000006 /* SajuLottoApp.swift */,
 				A00000000000000000000007 /* Web */,
 				A00000000000000000000008 /* Assets.xcassets */,
@@ -164,6 +170,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B00000000000000000000042 /* ReflectionModels.swift in Sources */,
+				B00000000000000000000043 /* ReflectionViews.swift in Sources */,
 				A00000000000000000000015 /* SajuLottoApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -216,6 +224,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.addvalue.sajulotto;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) DEBUG";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 1;
 			};
