@@ -134,6 +134,11 @@ final class SajuLottoUITests: XCTestCase {
         capture("08-입력정보와원형번호")
     }
 
+    private func scrollReflection(_ app: XCUIApplication) {
+        app.coordinate(withNormalizedOffset: CGVector(dx: 0.96, dy: 0.78))
+            .press(forDuration: 0.05, thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.96, dy: 0.22)))
+    }
+
     func testReflectionLifecycleAndPrivateSharing() throws {
         continueAfterFailure = false
         let app = XCUIApplication()
@@ -142,22 +147,25 @@ final class SajuLottoUITests: XCTestCase {
         app.launch()
         let topic = app.buttons["reflection-topic-joy"]
         XCTAssertTrue(topic.waitForExistence(timeout: 10))
-        if !topic.isHittable { app.swipeUp() }
+        if !topic.isHittable { scrollReflection(app) }
         topic.tap()
         let field = app.descendants(matching: .any).matching(identifier: "reflection-text").firstMatch
         XCTAssertTrue(field.waitForExistence(timeout: 5))
         field.tap(); field.typeText("PRIVATE-REFLECTION-TEST")
         if app.buttons["입력 완료"].exists { app.buttons["입력 완료"].tap() }
         let save = app.buttons["reflection-save"]
-        for _ in 0..<5 { if save.isHittable { break }; app.swipeUp() }
+        for _ in 0..<5 { if save.isHittable { break }; scrollReflection(app) }
         save.tap()
+        let result = app.buttons["reflection-result-joy"]
+        XCTAssertTrue(result.waitForExistence(timeout: 8))
+        result.tap()
         let anyNumbers = app.descendants(matching: .any).matching(identifier: "reflection-numbers").firstMatch
         XCTAssertTrue(anyNumbers.waitForExistence(timeout: 8), app.debugDescription)
         let original = anyNumbers.label
         XCTAssertFalse(original.isEmpty)
         capture("09-회고카드완성")
         let share = app.buttons["reflection-share"]
-        for _ in 0..<4 { if share.isHittable { break }; app.swipeUp() }
+        for _ in 0..<4 { if share.isHittable { break }; scrollReflection(app) }
         share.tap()
         let privacy = app.switches["reflection-share-body"]
         XCTAssertTrue(privacy.waitForExistence(timeout: 5))
@@ -171,7 +179,7 @@ final class SajuLottoUITests: XCTestCase {
         XCTAssertTrue(field.waitForExistence(timeout: 5))
         field.tap(); field.typeText(" UPDATED")
         if app.buttons["입력 완료"].exists { app.buttons["입력 완료"].tap() }
-        for _ in 0..<5 { if save.isHittable { break }; app.swipeUp() }
+        for _ in 0..<5 { if save.isHittable { break }; scrollReflection(app) }
         save.tap()
         XCTAssertTrue(anyNumbers.waitForExistence(timeout: 5))
         XCTAssertEqual(anyNumbers.label, original)
@@ -184,5 +192,46 @@ final class SajuLottoUITests: XCTestCase {
         XCTAssertTrue(anyNumbers.waitForExistence(timeout: 5))
         XCTAssertEqual(anyNumbers.label, original)
         XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "UPDATED")).firstMatch.exists)
+    }
+
+    func testInlineReflectionAccumulatesSets() throws {
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        app.launchArguments = ["-AppleLanguages", "(ko)", "-AppleLocale", "ko_KR"]
+        app.launchEnvironment["REFLECTION_TEST_STORE"] = UUID().uuidString
+        app.launch()
+        func record(_ topic: String, text: String) {
+            let button = app.buttons["reflection-topic-" + topic]
+            XCTAssertTrue(button.waitForExistence(timeout: 5))
+            for _ in 0..<6 { if button.isHittable { break }; scrollReflection(app) }
+            button.tap()
+            let field = app.descendants(matching: .any).matching(identifier: "reflection-text").firstMatch
+            XCTAssertTrue(field.waitForExistence(timeout: 5))
+            for _ in 0..<4 { if field.isHittable { break }; scrollReflection(app) }
+            field.tap(); field.typeText(text)
+            if app.buttons["입력 완료"].exists { app.buttons["입력 완료"].tap() }
+            capture("12-카드아래펼침입력")
+            let save = app.buttons["reflection-save"]
+            for _ in 0..<6 { if save.isHittable { break }; scrollReflection(app) }
+            save.tap()
+            let result = app.buttons["reflection-result-" + topic]
+            XCTAssertTrue(result.waitForExistence(timeout: 8))
+            XCTAssertTrue(result.isHittable)
+        }
+        record("joy", text: "FIRST REFLECTION")
+        let original = app.buttons["reflection-result-joy"].label
+        record("gratitude", text: "SECOND REFLECTION")
+        let results = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "reflection-result-"))
+        XCTAssertEqual(results.count, 2)
+        XCTAssertEqual(app.buttons["reflection-result-joy"].label, original)
+        XCTAssertFalse(app.buttons["reflection-save"].exists)
+        capture("13-상단번호두세트누적")
+        record("joy", text: " EDITED")
+        XCTAssertEqual(results.count, 2)
+        XCTAssertEqual(app.buttons["reflection-result-joy"].label, original)
+        app.terminate(); app.launch()
+        XCTAssertTrue(app.buttons["reflection-result-joy"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.buttons["reflection-result-gratitude"].exists)
+        XCTAssertEqual(results.count, 2)
     }
 }

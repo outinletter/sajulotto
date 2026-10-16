@@ -17,9 +17,11 @@ struct ReflectionHomeView: View {
     @ObservedObject var store: ReflectionStore
     @State private var composing: ReflectionTopic?
     @State private var path: [UUID] = []
-    private var completed: Int { ReflectionTopic.allCases.filter { store.card(for: $0) != nil }.count }
+    private var weekCards: [ReflectionCard] { store.cards.filter { $0.weekID == ReflectionStore.weekID(for: Date()) }.reversed() }
+    private var completed: Int { weekCards.count }
     var body: some View {
         NavigationStack(path: $path) {
+            ScrollViewReader { proxy in
             ScrollView {
                 VStack(alignment: .leading, spacing: 26) {
                     VStack(alignment: .leading, spacing: 12) {
@@ -28,6 +30,8 @@ struct ReflectionHomeView: View {
                         Text("좋았던 일도, 아쉬웠던 일도.\n한 줄을 남기면 나만의 번호 카드가 완성돼요.")
                             .font(.subheadline).foregroundStyle(.secondary).lineSpacing(5)
                     }
+                    ReflectionAccumulatedView(cards: weekCards) { card in path.append(card.id) }
+                        .id("reflection-results")
                     HStack {
                         Label("이번 주의 조각", systemImage: "square.grid.2x2")
                         Spacer()
@@ -35,12 +39,29 @@ struct ReflectionHomeView: View {
                     }.font(.subheadline.weight(.medium))
                     VStack(spacing: 12) {
                         ForEach(ReflectionTopic.allCases) { topic in
-                            Button {
-                                if let card = store.card(for: topic) { path.append(card.id) } else { composing = topic }
-                            } label: {
-                                ReflectionTopicRow(topic: topic, completed: store.card(for: topic) != nil)
+                            VStack(spacing: 0) {
+                                Button {
+                                    withAnimation(.easeInOut(duration: 0.25)) {
+                                        composing = composing == topic ? nil : topic
+                                        if composing == topic { proxy.scrollTo("reflection-topic-" + topic.rawValue, anchor: .top) }
+                                    }
+                                } label: {
+                                    ReflectionTopicRow(topic: topic, completed: store.card(for: topic) != nil, expanded: composing == topic)
+                                }
+                                .buttonStyle(.plain).id("reflection-topic-" + topic.rawValue).accessibilityIdentifier("reflection-topic-\(topic.rawValue)")
+                                .accessibilityValue(composing == topic ? "펼쳐짐" : "접힘")
+                                if composing == topic {
+                                    ReflectionEditor(store: store, topic: topic, existing: store.card(for: topic), inline: true,
+                                        onCancel: { withAnimation { composing = nil } }) { _ in
+                                            withAnimation(.easeInOut(duration: 0.25)) {
+                                                composing = nil
+                                                proxy.scrollTo("reflection-results", anchor: .top)
+                                            }
+                                        }
+                                        .background(.white.opacity(0.6), in: RoundedRectangle(cornerRadius: 20))
+                                        .transition(.opacity.combined(with: .move(edge: .top)))
+                                }
                             }
-                            .buttonStyle(.plain).accessibilityIdentifier("reflection-topic-\(topic.rawValue)")
                         }
                     }
                     VStack(alignment: .leading, spacing: 8) {
@@ -53,10 +74,8 @@ struct ReflectionHomeView: View {
                     }.padding(18).background(.white.opacity(0.7), in: RoundedRectangle(cornerRadius: 20))
                 }.padding(22)
             }
-            .background(reflectionPaper).navigationTitle("한 줄 회고").navigationBarTitleDisplayMode(.inline)
-            .sheet(item: $composing) { topic in
-                ReflectionEditor(store: store, topic: topic) { card in path.append(card.id) }
             }
+            .background(reflectionPaper).navigationTitle("한 줄 회고").navigationBarTitleDisplayMode(.inline)
             .navigationDestination(for: UUID.self) { id in
                 if let card = store.cards.first(where: { $0.id == id }) { ReflectionDetailView(store: store, original: card) }
             }
@@ -67,20 +86,56 @@ struct ReflectionHomeView: View {
     }
 }
 
+private struct ReflectionAccumulatedView: View {
+    let cards: [ReflectionCard]
+    let onOpen: (ReflectionCard) -> Void
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Label("이번 주 모은 번호", systemImage: "circle.grid.2x3.fill").font(.headline)
+                Spacer()
+                Text("\(cards.count)세트").font(.caption).foregroundStyle(.secondary)
+            }
+            if cards.isEmpty {
+                Text("아래 카드에 한 줄을 남기면 번호가 한 세트씩 쌓여요.").font(.caption).foregroundStyle(.secondary)
+            }
+            ForEach(cards) { card in
+                Button { onOpen(card) } label: {
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack { Text(card.topic.title).font(.caption.weight(.medium)); Spacer(); Image(systemName: "chevron.right").font(.caption2) }
+                            .foregroundStyle(card.mood.color)
+                        HStack(spacing: 5) {
+                            ForEach(card.numbers, id: \.self) { number in
+                                Text(String(format: "%02d", number)).font(.system(.body, design: .rounded).bold())
+                                    .frame(maxWidth: .infinity).frame(height: 36)
+                                    .background(card.mood.color.opacity(0.12), in: Circle())
+                                    .overlay(Circle().stroke(card.mood.color.opacity(0.25)))
+                            }
+                        }.foregroundStyle(.primary)
+                    }
+                }.buttonStyle(.plain).accessibilityIdentifier("reflection-result-\(card.topic.rawValue)")
+                    .accessibilityLabel(card.topic.title + " · " + card.numberText)
+            }
+        }.padding(18).background(.white, in: RoundedRectangle(cornerRadius: 22))
+    }
+}
+
 private struct ReflectionTopicRow: View {
     let topic: ReflectionTopic
     let completed: Bool
+    var expanded = false
     var body: some View {
         HStack(spacing: 16) {
             Image(systemName: topic.symbol).font(.title2).foregroundStyle(.brown)
                 .frame(width: 48, height: 54).background(reflectionPaper, in: RoundedRectangle(cornerRadius: 16))
             VStack(alignment: .leading, spacing: 5) {
                 Text(topic.title).font(.headline).foregroundStyle(.primary)
-                Text(completed ? "이번 주 카드가 완성됐어요 · 다시 보기" : topic.question)
+                Text(completed ? "이번 주 카드가 완성됐어요 · 수정하기" : topic.question)
                     .font(.caption).foregroundStyle(.secondary).multilineTextAlignment(.leading)
             }
             Spacer(minLength: 0)
-            Image(systemName: completed ? "checkmark.circle.fill" : "chevron.right").foregroundStyle(completed ? .green : .brown)
+            if completed { Image(systemName: "checkmark.circle.fill").foregroundStyle(.green) }
+            Image(systemName: expanded ? "chevron.up" : "chevron.down").foregroundStyle(.brown)
         }
         .padding(16).frame(maxWidth: .infinity, alignment: .leading)
         .background(.white, in: RoundedRectangle(cornerRadius: 22))
@@ -91,6 +146,8 @@ private struct ReflectionEditor: View {
     @ObservedObject var store: ReflectionStore
     let topic: ReflectionTopic
     let existing: ReflectionCard?
+    let inline: Bool
+    let onCancel: (() -> Void)?
     let onSaved: (ReflectionCard) -> Void
     @Environment(\.dismiss) private var dismiss
     @State private var text: String
@@ -100,87 +157,97 @@ private struct ReflectionEditor: View {
     @State private var error: String?
     @State private var saving = false
     @FocusState private var textFocused: Bool
-    init(store: ReflectionStore, topic: ReflectionTopic, existing: ReflectionCard? = nil, onSaved: @escaping (ReflectionCard) -> Void) {
-        self.store = store; self.topic = topic; self.existing = existing; self.onSaved = onSaved
+    init(store: ReflectionStore, topic: ReflectionTopic, existing: ReflectionCard? = nil, inline: Bool = false, onCancel: (() -> Void)? = nil, onSaved: @escaping (ReflectionCard) -> Void) {
+        self.store = store; self.topic = topic; self.existing = existing; self.inline = inline; self.onCancel = onCancel; self.onSaved = onSaved
         _text = State(initialValue: existing?.text ?? "")
         _mood = State(initialValue: existing?.mood ?? .warm)
         _strokes = State(initialValue: existing?.strokes ?? [])
     }
-    var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
-                    Text(topic.question).font(.title2.bold()).fixedSize(horizontal: false, vertical: true)
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("01  지금의 마음 색").font(.subheadline.weight(.semibold))
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: 10) {
-                                ForEach(ReflectionMood.allCases) { item in
-                                    Button { mood = item } label: {
-                                        VStack(spacing: 7) {
-                                            Circle().fill(item.color).frame(width: 36, height: 36)
-                                                .overlay { if mood == item { Image(systemName: "checkmark").foregroundStyle(.white).font(.caption.bold()) } }
-                                            Text(item.title).font(.caption).foregroundStyle(.primary)
-                                        }.padding(8)
-                                    }.accessibilityLabel(item.title).accessibilityIdentifier("reflection-mood-\(item.rawValue)")
-                                }
-                            }
+    private var fields: some View {
+        VStack(alignment: .leading, spacing: 24) {
+            Text(topic.question).font(.title2.bold()).fixedSize(horizontal: false, vertical: true)
+            VStack(alignment: .leading, spacing: 12) {
+                Text("01  지금의 마음 색").font(.subheadline.weight(.semibold))
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 10) {
+                        ForEach(ReflectionMood.allCases) { item in
+                            Button { mood = item } label: {
+                                VStack(spacing: 7) {
+                                    Circle().fill(item.color).frame(width: 36, height: 36)
+                                        .overlay { if mood == item { Image(systemName: "checkmark").foregroundStyle(.white).font(.caption.bold()) } }
+                                    Text(item.title).font(.caption).foregroundStyle(.primary)
+                                }.padding(8)
+                            }.accessibilityLabel(item.title).accessibilityIdentifier("reflection-mood-\(item.rawValue)")
                         }
                     }
-                    VStack(alignment: .leading, spacing: 10) {
-                        HStack { Text("02  나에게 남기는 한 줄").font(.subheadline.weight(.semibold)); Spacer(); Text("\(text.count)/500").font(.caption).foregroundStyle(text.count > 500 ? .red : .secondary) }
-                        TextField("예: 바쁜 하루에도 잠깐 산책을 했다", text: $text, axis: .vertical)
-                            .lineLimit(3...6).padding(16).background(.white, in: RoundedRectangle(cornerRadius: 16))
-                            .focused($textFocused).accessibilityIdentifier("reflection-text")
-                        Text("잘 쓸 필요 없어요. 다른 사람의 실명이나 연락처는 적지 않아도 됩니다.")
-                            .font(.caption).foregroundStyle(.secondary)
-                    }
-                    VStack(alignment: .leading, spacing: 10) {
-                        HStack {
-                            Text("03  한 획으로 마무리 · 선택").font(.subheadline.weight(.semibold))
-                            Spacer()
-                            Button("지우기") { strokes = []; active = [] }.font(.caption)
-                        }
-                        GeometryReader { geometry in
-                            ZStack {
-                                RoundedRectangle(cornerRadius: 20).fill(.white.opacity(0.8))
-                                if strokes.isEmpty && active.isEmpty { Text("손가락으로 오늘의 흔적을 남겨요").font(.caption).foregroundStyle(.secondary) }
-                                ReflectionInk(strokes: strokes + (active.isEmpty ? [] : [ReflectionStroke(points: active)]), color: mood.color)
-                            }
-                            .contentShape(Rectangle())
-                            .gesture(DragGesture(minimumDistance: 0)
-                                .onChanged { value in
-                                    guard strokes.count < 64, active.count < 256 else { return }
-                                    active.append(ReflectionPoint(x: min(1, max(0, value.location.x / max(1, geometry.size.width))), y: min(1, max(0, value.location.y / max(1, geometry.size.height)))))
-                                }
-                                .onEnded { _ in
-                                    if !active.isEmpty { strokes.append(ReflectionStroke(points: active)); active = [] }
-                                })
-                            .accessibilityLabel("오늘의 손그림, 선택 항목").accessibilityIdentifier("reflection-ink")
-                        }.frame(height: 130)
-                    }
-                    Text(existing == nil ? "한 주에 주제별 카드 한 장을 만들어요. 번호는 기기에서 무작위로 생성되며, 다시 보거나 글을 고쳐도 유지됩니다." : "글과 색을 수정해도 기존 번호와 카드는 유지됩니다.")
-                        .font(.caption).foregroundStyle(.secondary).lineSpacing(4)
-                    Button {
-                        guard !saving else { return }; saving = true
-                        do {
-                            let card = try store.save(topic: topic, mood: mood, text: text, strokes: strokes, editing: existing?.id)
-                            dismiss(); onSaved(card)
-                        } catch { self.error = error.localizedDescription; saving = false }
-                    } label: {
-                        Label(existing == nil ? "나의 카드 완성하기" : "기록 수정 저장", systemImage: "sparkles")
-                            .font(.headline).frame(maxWidth: .infinity).padding(16)
-                    }.buttonStyle(.borderedProminent).tint(mood.color)
-                        .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || text.count > 500 || saving)
-                        .accessibilityIdentifier("reflection-save")
-                }.padding(22)
-            }.background(reflectionPaper).scrollDismissesKeyboard(.interactively)
-                .navigationTitle(existing == nil ? topic.title : "기록 수정").navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .cancellationAction) { Button("닫기") { dismiss() } }
-                    ToolbarItemGroup(placement: .keyboard) { Spacer(); Button("입력 완료") { textFocused = false } }
                 }
-                .alert("저장 안내", isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } })) { Button("확인") { error = nil } } message: { Text(error ?? "") }
+            }
+            VStack(alignment: .leading, spacing: 10) {
+                HStack { Text("02  나에게 남기는 한 줄").font(.subheadline.weight(.semibold)); Spacer(); Text("\(text.count)/500").font(.caption).foregroundStyle(text.count > 500 ? .red : .secondary) }
+                TextField("예: 바쁜 하루에도 잠깐 산책을 했다", text: $text, axis: .vertical)
+                    .lineLimit(3...6).padding(16).background(.white, in: RoundedRectangle(cornerRadius: 16))
+                    .focused($textFocused).accessibilityIdentifier("reflection-text")
+                Text("잘 쓸 필요 없어요. 다른 사람의 실명이나 연락처는 적지 않아도 됩니다.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    Text("03  한 획으로 마무리 · 선택").font(.subheadline.weight(.semibold))
+                    Spacer()
+                    Button("지우기") { strokes = []; active = [] }.font(.caption)
+                }
+                GeometryReader { geometry in
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 20).fill(.white.opacity(0.8))
+                        if strokes.isEmpty && active.isEmpty { Text("손가락으로 오늘의 흔적을 남겨요").font(.caption).foregroundStyle(.secondary) }
+                        ReflectionInk(strokes: strokes + (active.isEmpty ? [] : [ReflectionStroke(points: active)]), color: mood.color)
+                    }
+                    .contentShape(Rectangle())
+                    .gesture(DragGesture(minimumDistance: 0)
+                        .onChanged { value in
+                            guard strokes.count < 64, active.count < 256 else { return }
+                            active.append(ReflectionPoint(x: min(1, max(0, value.location.x / max(1, geometry.size.width))), y: min(1, max(0, value.location.y / max(1, geometry.size.height)))))
+                        }
+                        .onEnded { _ in
+                            if !active.isEmpty { strokes.append(ReflectionStroke(points: active)); active = [] }
+                        })
+                    .accessibilityLabel("오늘의 손그림, 선택 항목").accessibilityIdentifier("reflection-ink")
+                }.frame(height: 130)
+            }
+            Text(existing == nil ? "한 주에 주제별 카드 한 장을 만들어요. 번호는 기기에서 무작위로 생성되며, 다시 보거나 글을 고쳐도 유지됩니다." : "글과 색을 수정해도 기존 번호와 카드는 유지됩니다.")
+                .font(.caption).foregroundStyle(.secondary).lineSpacing(4)
+            Button {
+                guard !saving else { return }; saving = true
+                do {
+                    let card = try store.save(topic: topic, mood: mood, text: text, strokes: strokes, editing: existing?.id)
+                    textFocused = false
+                    if !inline { dismiss() }; onSaved(card)
+                } catch { self.error = error.localizedDescription; saving = false }
+            } label: {
+                Label(existing == nil ? "나의 카드 완성하기" : "기록 수정 저장", systemImage: "sparkles")
+                    .font(.headline).frame(maxWidth: .infinity).padding(16)
+            }.buttonStyle(.borderedProminent).tint(mood.color)
+                .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || text.count > 500 || saving)
+                .accessibilityIdentifier("reflection-save")
+        }.padding(22)
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) { Spacer(); Button("입력 완료") { textFocused = false } }
+        }
+        .alert("저장 안내", isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } })) { Button("확인") { error = nil } } message: { Text(error ?? "") }
+    }
+    var body: some View {
+        if inline {
+            VStack(spacing: 0) {
+                fields
+                Button("입력창 닫기") { textFocused = false; onCancel?() }.font(.caption).padding(.bottom, 18)
+            }
+        } else {
+            NavigationStack {
+                ScrollView { fields }
+                    .background(reflectionPaper).scrollDismissesKeyboard(.interactively)
+                    .navigationTitle(existing == nil ? topic.title : "기록 수정").navigationBarTitleDisplayMode(.inline)
+                    .toolbar { ToolbarItem(placement: .cancellationAction) { Button("닫기") { dismiss() } } }
+            }
         }
     }
 }
