@@ -29,6 +29,15 @@ import Foundation
         do { _ = try reopened.save(topic:.release,mood:.quiet,text:String(repeating:"가",count:501),strokes:[],now:date); assertionFailure("long accepted") } catch ReflectionError.tooLong {}
         try reopened.delete(next)
         assert(ReflectionStore(file:file).cards.count == 1)
+        let entries: [[String: Any]] = ReflectionTopic.allCases.map { ["topic": $0.rawValue, "text": "통합 입력 " + $0.title, "numbers": [1,7,13,22,34,45]] }
+        try reopened.saveAnalysis(entries, now: date)
+        assert(reopened.cards.count == 5)
+        assert(reopened.cards.allSatisfy { $0.numbers == [1,7,13,22,34,45] })
+        assert(ReflectionStore(file:file).cards == reopened.cards)
+        var invalid = entries; invalid[4]["numbers"] = [1,1,2,3,4,5]
+        let beforeBatch = reopened.cards
+        do { try reopened.saveAnalysis(invalid, now: date); assertionFailure("invalid batch accepted") } catch ReflectionError.invalidCard {}
+        assert(reopened.cards == beforeBatch)
         let corrupt = Data("broken-json".utf8);try corrupt.write(to:file)
         let protected = ReflectionStore(file:file)
         do { _ = try protected.save(topic:.joy,mood:.warm,text:"새 글",strokes:[]); assertionFailure("corruption overwritten") } catch ReflectionError.unreadable {}

@@ -142,13 +142,13 @@
 <section class="glass-card rounded-2xl p-4 text-xs leading-relaxed mb-6" aria-label="서비스 및 개인정보 안내">
 <strong>재미로 즐기는 오프라인 사주 · 번호 생성</strong>
 <p>당첨을 예측하거나 당첨 확률 상승을 보장하지 않습니다. 복권 구매·판매·베팅 기능은 없습니다. 양력만 지원합니다. 절기는 검증된 한국천문연구원 자료 또는 천문 계산값을 사용하며 출처와 경계 한계를 표시합니다.</p>
-<p>입력한 이름·생년월일·성별·출생 시간·지역은 기기에서 계산하며 외부 서버로 전송하거나 저장하지 않습니다. 분석 화면을 닫으면 입력 정보는 사라집니다. iOS의 AI 해석은 별도 동의를 받은 뒤 계산된 사주·오행 정보와 참고 요일을 Cloudflare와 외부 AI 분석 서비스에 전송합니다. 이름·생년월일·지역은 전송하지 않습니다.</p>
+<p>입력한 이름·생년월일·성별·출생 시간·지역은 기기에서 계산하며 외부 서버로 전송하지 않습니다. 분석 화면을 닫으면 입력 정보는 사라집니다. 단, iOS에서 번호 저장을 누르면 입력 정보도 번호와 함께 기기에 보관되며 기록에서 삭제할 수 있습니다. iOS의 AI 해석은 별도 동의를 받은 뒤 계산된 사주·오행·주간 비교·번호·십성·지장간·절기 이름·계산 방식·불확실성 경고를 Cloudflare와 DeepSeek에 전송합니다. 정확한 출생 시각과 지역·경도값은 전송하지 않습니다. 이름·생년월일·지역은 전송하지 않습니다.</p>
 </section>
     <section id="inputPortal" class="glass-card rounded-2xl p-6 md:p-10 transition-all duration-500">
         <div class="mb-8 p-4 rounded-xl bg-accent/5 border border-accent/20 text-center">
             <p class="text-accent text-sm font-bold mb-1">📅 주간 운명 리듬 분석</p>
             <p class="text-soft/80 text-xs leading-relaxed">
-                일요일부터 토요일까지의 기류를 참고용으로 살펴보고,<br>
+                한국 시간 일요일부터 토요일 19:35까지의 기류를 참고용으로 살펴보고,<br>
                 사주 계산에 따른 <span class="text-accent font-bold">참고용 행운 요일</span>을 찾아 번호를 생성합니다.
             </p>
         </div>
@@ -222,7 +222,8 @@
                 <input type="time" id="inputExactTime" class="input-field w-full px-4 py-3 rounded-xl mt-2">
             </label>
             <p class="text-xs text-soft/60 mt-2">한국 출생·양력·UTC+09:00 기준입니다. 과거 표준시·서머타임 및 해외 출생은 별도 확인이 필요합니다.</p>
-            <button type="submit" id="submitBtn" class="w-full mt-4 bg-gradient-to-br from-accent to-[#c3915f] text-white font-bold text-lg py-4 rounded-xl active:scale-[0.98] transition-all shadow-md shadow-accent/20">분석 및 번호 생성 ☯</button>
+<section aria-label="이번 주의 다섯 이야기" class="space-y-3 mt-6"><h3 class="font-bold text-lg">이번 주의 다섯 이야기</h3><p class="text-sm text-soft">원하는 항목을 펼쳐 적어주세요. 입력은 선택 사항이며 기기에만 저장됩니다. 아래 버튼을 누르면 주간 사주를 비교해 참고 요일과 번호 5세트를 함께 만듭니다.</p><details class="glass-card rounded-xl p-4"><summary class="font-bold cursor-pointer">좋았던 일</summary><label for="reflection-joy" class="text-sm">좋았던 일 · 최대 500자</label><textarea id="reflection-joy" maxlength="500" rows="3" class="w-full mt-2 p-3 rounded-xl border border-accent/30" placeholder="한 줄로 남겨보세요"></textarea></details><details class="glass-card rounded-xl p-4"><summary class="font-bold cursor-pointer">아쉬웠던 일</summary><label for="reflection-release" class="text-sm">아쉬웠던 일 · 최대 500자</label><textarea id="reflection-release" maxlength="500" rows="3" class="w-full mt-2 p-3 rounded-xl border border-accent/30" placeholder="한 줄로 남겨보세요"></textarea></details><details class="glass-card rounded-xl p-4"><summary class="font-bold cursor-pointer">고마웠던 일</summary><label for="reflection-gratitude" class="text-sm">고마웠던 일 · 최대 500자</label><textarea id="reflection-gratitude" maxlength="500" rows="3" class="w-full mt-2 p-3 rounded-xl border border-accent/30" placeholder="한 줄로 남겨보세요"></textarea></details><details class="glass-card rounded-xl p-4"><summary class="font-bold cursor-pointer">내가 해낸 일</summary><label for="reflection-achievement" class="text-sm">내가 해낸 일 · 최대 500자</label><textarea id="reflection-achievement" maxlength="500" rows="3" class="w-full mt-2 p-3 rounded-xl border border-accent/30" placeholder="한 줄로 남겨보세요"></textarea></details><details class="glass-card rounded-xl p-4"><summary class="font-bold cursor-pointer">다음 주의 바람</summary><label for="reflection-beginning" class="text-sm">다음 주의 바람 · 최대 500자</label><textarea id="reflection-beginning" maxlength="500" rows="3" class="w-full mt-2 p-3 rounded-xl border border-accent/30" placeholder="한 줄로 남겨보세요"></textarea></details></section>
+            <button type="submit" id="submitBtn" class="w-full mt-4 bg-gradient-to-br from-accent to-[#c3915f] text-white font-bold text-lg py-4 rounded-xl active:scale-[0.98] transition-all shadow-md shadow-accent/20">주간 사주 분석 및 번호 생성 ☯</button>
         </form>
     </section>
 
@@ -382,10 +383,11 @@
     const SolarManager = window.SajuCalendar;
 
     function getThisWeekInfo() {
-        const today = new Date();
+        const today = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Seoul' }));
         const currentDay = today.getDay(); // 0:일, 1:월, ... 6:토
         const sunday = new Date(today);
         sunday.setDate(today.getDate() - currentDay);
+        sunday.setHours(0, 0, 0, 0);
 
         const weekDates = [];
         for (let i = 0; i <= 6; i++) {
@@ -584,10 +586,11 @@
 
         const luckyDay = dailyScores[bestDayIdx];
         const luckyDateStr = `${luckyDay.date.getFullYear()}-${String(luckyDay.date.getMonth()+1).padStart(2,'0')}-${String(luckyDay.date.getDate()).padStart(2,'0')}`;
-        currentUserSeed = generateSeed(name, luckyDateStr, timeVal, luckyDateStr);
+        currentUserSeed = generateSeed('', JSON.stringify(solarBirth), exactTime || timeVal, luckyDateStr + JSON.stringify(distribution) + JSON.stringify(luckyDay.dDayP));
+        window.sajuWeeklyContext = { period: '한국 시간 일요일 00:00부터 토요일 19:35까지 (20:35경 추첨 기준 1시간 전; 방송 일정 변경 가능)', days: dailyScores.map((d, i) => ({ day: weekDays[i], date: `${d.date.getFullYear()}-${d.date.getMonth()+1}-${d.date.getDate()}`, score: d.score, tenGod: d.tenGod, relation: d.branchRel })), selectedDay: weekDays[bestDayIdx], selectedDate: luckyDateStr, preferredElements: [...new Set([getElementOfCharacter(heavenlyStems[luckyDay.dDayP.stemIdx]), getElementOfCharacter(earthlyBranches[luckyDay.dDayP.branchIdx])])] };
 
         document.getElementById('displayUser').textContent = name;
-        document.getElementById('bestDayInfo').textContent = `${weekDays[bestDayIdx]} (${luckyDateStr})`;
+        document.getElementById('bestDayInfo').textContent = `${weekDays[bestDayIdx]} (${luckyDateStr}) · 분석 마감 토요일 19:35(KST)`;
         document.getElementById('luckyDayTitle').textContent = weekDays[bestDayIdx];
 
         ['year', 'month', 'day', 'hour'].forEach((p, i) => {
@@ -717,10 +720,23 @@
     function generateFinalNumbers() {
         const createSet = (off) => {
             const r = mulberry32(currentUserSeed + off); const s = new Set();
-            while(s.size < 6) s.add(Math.floor(r() * 45) + 1);
+            const preferred = window.sajuWeeklyContext.preferredElements;
+            const elementCycle = ['water', 'fire', 'wood', 'metal', 'earth'];
+            while (s.size < 6) {
+                const candidates = Array.from({length: 45}, (_, i) => i + 1).filter(n => !s.has(n));
+                const weights = candidates.map(n => preferred.includes(elementCycle[(n - 1) % 5]) ? 2 : 1);
+                let pick = r() * weights.reduce((a, b) => a + b, 0);
+                const index = weights.findIndex(w => (pick -= w) < 0);
+                s.add(candidates[index]);
+            }
             return Array.from(s).sort((a,b)=>a-b);
         };
         const sets = [77, 88, 99, 111, 222].map(off => createSet(off));
+        window.sajuWeeklyContext.numberSets = sets;
+        // Private journal text stays outside sajuWeeklyContext and the AI payload.
+        const entries = ['joy','release','gratitude','achievement','beginning'].map((topic, i) => ({topic, text: document.getElementById('reflection-' + topic).value.trim(), numbers: sets[i]}));
+        window.webkit?.messageHandlers?.reflectionSave?.postMessage(entries);
+
         [1, 2, 3, 4, 5].forEach((idx) => {
             const container = document.getElementById(`numberContainer${idx}`);
             const balls = container.querySelectorAll('.lotto-ball');

@@ -177,9 +177,12 @@ final class ReportStore: ObservableObject {
 
 struct AnalysisWebView: UIViewRepresentable {
     @ObservedObject var model: AnalysisViewModel
-    func makeCoordinator() -> Coordinator { Coordinator() }
+    @ObservedObject var reflections: ReflectionStore
+    func makeCoordinator() -> Coordinator { Coordinator(reflections: reflections, model: model) }
     func makeUIView(context: Context) -> WKWebView {
         let view = model.webView
+        view.configuration.userContentController.removeScriptMessageHandler(forName: "reflectionSave")
+        view.configuration.userContentController.add(context.coordinator, name: "reflectionSave")
         view.navigationDelegate = context.coordinator
         view.uiDelegate = context.coordinator
         if let url = Bundle.main.url(forResource: "index", withExtension: "html", subdirectory: "Web") {
@@ -188,7 +191,22 @@ struct AnalysisWebView: UIViewRepresentable {
         return view
     }
     func updateUIView(_ view: WKWebView, context: Context) {}
-    final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate {
+    final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandler {
+        let reflections: ReflectionStore
+        let model: AnalysisViewModel
+        init(reflections: ReflectionStore, model: AnalysisViewModel) { self.reflections = reflections; self.model = model }
+        func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+            guard message.frameInfo.isMainFrame, message.frameInfo.request.url?.isFileURL == true,
+                  let entries = message.body as? [[String: Any]] else { return }
+            do { try reflections.saveAnalysis(entries) }
+            catch { model.message = "번호는 생성되었지만 이야기 저장에 실패했습니다. " + error.localizedDescription; model.showMessage = true }
+        }
+        func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+            let entries = ReflectionTopic.allCases.map { ["topic": $0.rawValue, "text": reflections.card(for: $0)?.text ?? ""] }
+            guard let data = try? JSONSerialization.data(withJSONObject: entries, options: [.fragmentsAllowed]),
+                  let json = String(data: data, encoding: .utf8) else { return }
+            webView.evaluateJavaScript("(\(json)).forEach(e => { const field = document.getElementById('reflection-' + e.topic); if (field) field.value = e.text; });", completionHandler: nil)
+        }
         func webView(_ webView: WKWebView, decidePolicyFor action: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
             decisionHandler(action.request.url?.isFileURL == true ? .allow : .cancel)
         }
@@ -224,10 +242,8 @@ struct AnalysisWebView: UIViewRepresentable {
     var body: some Scene {
         WindowGroup {
             TabView {
-                ReflectionHomeView(store: reflections).tabItem { Label("회고", systemImage: "pencil.and.outline") }
-                ReflectionCollectionView(store: reflections).tabItem { Label("도감", systemImage: "book.closed") }
                 NavigationStack {
-                    AnalysisWebView(model: analysis)
+                    AnalysisWebView(model: analysis, reflections: reflections)
                         .navigationTitle("천기누설")
                         .navigationBarTitleDisplayMode(.inline)
                         .toolbar {
@@ -262,6 +278,7 @@ struct AnalysisWebView: UIViewRepresentable {
                             }
                         }
                 }.tabItem { Label("분석", systemImage: "sparkles") }
+                ReflectionCollectionView(store: reflections).tabItem { Label("도감", systemImage: "book.closed") }
                 NavigationStack {
                     List {
                         if store.reports.isEmpty { Text("분석 후 ‘번호 저장’을 누르면 이곳에서 번호를 확인할 수 있습니다.").foregroundStyle(.secondary) }
@@ -294,8 +311,8 @@ struct AnalysisWebView: UIViewRepresentable {
                                 .accessibilityIdentifier("app-reset")
                             Text("저장된 회고 카드·본문·손그림·번호 및 입력 정보와 현재 분석 결과를 삭제하고 처음 화면으로 돌아갑니다.").font(.caption).foregroundStyle(.secondary)
                         }
-                        Section("한 줄 회고와 주간 도감") {
-                            Text("다섯 가지 주제 중 하나에 마음 색과 한 줄을 남기면 번호 카드가 완성됩니다. 한 주에 주제별 한 장을 만들고, 다시 열거나 수정해도 번호는 유지됩니다. 번호는 기기에서 1~45 중 중복 없이 6개를 무작위로 선택하며 기록 내용과 감정은 당첨 확률에 영향을 주지 않습니다.")
+                        Section("다섯 이야기와 주간 도감") {
+                            Text("분석 화면에서 생년월일과 다섯 이야기를 입력하고 하단 버튼을 누르면, 주간 사주 점수를 비교해 참고 요일을 선정하고 그 날의 오행을 반영한 오락용 번호 5세트를 만듭니다. 작성한 이야기는 해당 번호와 도감에 저장됩니다. 동일한 출생 정보와 주간 기준으로 다시 분석하면 같은 번호가 나옵니다. 기록 내용과 감정은 당첨 확률에 영향을 주지 않습니다.")
                             Text("회고 본문과 손그림은 기기에만 저장하며 AI 서버에 보내지 않습니다. 기기 백업에 포함될 수 있습니다. 공유 미리보기에서는 본문을 기본적으로 숨기며 손그림은 포함되므로 사적인 표시가 없는지 확인하세요. 카드 상세에서 수정·삭제할 수 있습니다.")
                         }
                         Section("서비스 안내") {

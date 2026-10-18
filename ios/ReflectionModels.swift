@@ -116,6 +116,28 @@ enum ReflectionError: LocalizedError {
         try persist(updated); cards = updated
         return card
     }
+    /// Commit the five inputs and the selected day's generated sets together.
+    func saveAnalysis(_ entries: [[String: Any]], now: Date = Date()) throws {
+        guard readable else { throw ReflectionError.unreadable }
+        guard entries.count == 5 else { throw ReflectionError.invalidCard }
+        var updated = cards
+        var seen = Set<ReflectionTopic>()
+        for entry in entries {
+            guard let raw = entry["topic"] as? String, let topic = ReflectionTopic(rawValue: raw), seen.insert(topic).inserted,
+                  let text = entry["text"] as? String, text.count <= 500,
+                  let numbers = entry["numbers"] as? [Int], numbers.count == 6, Set(numbers).count == 6,
+                  numbers.allSatisfy({ (1...45).contains($0) }) else { throw ReflectionError.invalidCard }
+            let clean = text.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !clean.isEmpty else { continue }
+            let existing = card(for: topic, at: now)
+            let card = ReflectionCard(id: existing?.id ?? UUID(), created: existing?.created ?? now,
+                weekID: Self.weekID(for: now), topic: topic, mood: existing?.mood ?? .calm,
+                text: clean, strokes: existing?.strokes ?? [], numbers: numbers.sorted())
+            updated.removeAll { $0.id == card.id }; updated.append(card)
+        }
+        updated.sort { $0.created > $1.created }
+        try persist(updated); cards = updated
+    }
     func delete(_ card: ReflectionCard) throws {
         guard readable else { throw ReflectionError.unreadable }
         let updated = cards.filter { $0.id != card.id }; try persist(updated); cards = updated
