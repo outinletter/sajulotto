@@ -1,7 +1,7 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
-const context = {window:{}, document:{getElementById:()=>({addEventListener(){}})}, console, Date, setTimeout};
+const context = {window:{}, document:{getElementById:()=>({value:"",addEventListener(){}})}, console, Date, setTimeout};
 vm.createContext(context);
 for (const file of ['vendor/solar-terms.js','vendor/saju-calendar.js']) vm.runInContext(fs.readFileSync(file,'utf8'),context);
 const html=fs.readFileSync('ios/Web/index.html','utf8');

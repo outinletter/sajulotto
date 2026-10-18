@@ -117,6 +117,7 @@
         font-size: 0.7rem;
         pointer-events: none;
     }
+    #submitBtn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
     select option { background-color: #FAF7F2; color: #3A302E; padding: 10px; }
 
     /* Markdown Styles */
@@ -139,11 +140,7 @@
         </p>
     </header>
 
-<section class="glass-card rounded-2xl p-4 text-xs leading-relaxed mb-6" aria-label="서비스 및 개인정보 안내">
-<strong>재미로 즐기는 오프라인 사주 · 번호 생성</strong>
-<p>당첨을 예측하거나 당첨 확률 상승을 보장하지 않습니다. 복권 구매·판매·베팅 기능은 없습니다. 양력만 지원합니다. 절기는 검증된 한국천문연구원 자료 또는 천문 계산값을 사용하며 출처와 경계 한계를 표시합니다.</p>
-<p>입력한 이름·생년월일·성별·출생 시간·지역은 기기에서 계산하며 외부 서버로 전송하지 않습니다. 분석 화면을 닫으면 입력 정보는 사라집니다. 단, iOS에서 번호 저장을 누르면 입력 정보도 번호와 함께 기기에 보관되며 기록에서 삭제할 수 있습니다. iOS의 AI 해석은 별도 동의를 받은 뒤 계산된 사주·오행·주간 비교·번호·십성·지장간·절기 이름·계산 방식·불확실성 경고를 Cloudflare와 DeepSeek에 전송합니다. 정확한 출생 시각과 지역·경도값은 전송하지 않습니다. 이름·생년월일·지역은 전송하지 않습니다.</p>
-</section>
+
     <section id="inputPortal" class="glass-card rounded-2xl p-6 md:p-10 transition-all duration-500">
         <div class="mb-8 p-4 rounded-xl bg-accent/5 border border-accent/20 text-center">
             <p class="text-accent text-sm font-bold mb-1">📅 주간 운명 리듬 분석</p>
@@ -222,8 +219,8 @@
                 <input type="time" id="inputExactTime" class="input-field w-full px-4 py-3 rounded-xl mt-2">
             </label>
             <p class="text-xs text-soft/60 mt-2">한국 출생·양력·UTC+09:00 기준입니다. 과거 표준시·서머타임 및 해외 출생은 별도 확인이 필요합니다.</p>
-<section aria-label="이번 주의 다섯 이야기" class="space-y-3 mt-6"><h3 class="font-bold text-lg">이번 주의 다섯 이야기</h3><p class="text-sm text-soft">원하는 항목을 펼쳐 적어주세요. 입력은 선택 사항이며 기기에만 저장됩니다. 아래 버튼을 누르면 주간 사주를 비교해 참고 요일과 번호 5세트를 함께 만듭니다.</p><details class="glass-card rounded-xl p-4"><summary class="font-bold cursor-pointer">좋았던 일</summary><label for="reflection-joy" class="text-sm">좋았던 일 · 최대 500자</label><textarea id="reflection-joy" maxlength="500" rows="3" class="w-full mt-2 p-3 rounded-xl border border-accent/30" placeholder="한 줄로 남겨보세요"></textarea></details><details class="glass-card rounded-xl p-4"><summary class="font-bold cursor-pointer">아쉬웠던 일</summary><label for="reflection-release" class="text-sm">아쉬웠던 일 · 최대 500자</label><textarea id="reflection-release" maxlength="500" rows="3" class="w-full mt-2 p-3 rounded-xl border border-accent/30" placeholder="한 줄로 남겨보세요"></textarea></details><details class="glass-card rounded-xl p-4"><summary class="font-bold cursor-pointer">고마웠던 일</summary><label for="reflection-gratitude" class="text-sm">고마웠던 일 · 최대 500자</label><textarea id="reflection-gratitude" maxlength="500" rows="3" class="w-full mt-2 p-3 rounded-xl border border-accent/30" placeholder="한 줄로 남겨보세요"></textarea></details><details class="glass-card rounded-xl p-4"><summary class="font-bold cursor-pointer">내가 해낸 일</summary><label for="reflection-achievement" class="text-sm">내가 해낸 일 · 최대 500자</label><textarea id="reflection-achievement" maxlength="500" rows="3" class="w-full mt-2 p-3 rounded-xl border border-accent/30" placeholder="한 줄로 남겨보세요"></textarea></details><details class="glass-card rounded-xl p-4"><summary class="font-bold cursor-pointer">다음 주의 바람</summary><label for="reflection-beginning" class="text-sm">다음 주의 바람 · 최대 500자</label><textarea id="reflection-beginning" maxlength="500" rows="3" class="w-full mt-2 p-3 rounded-xl border border-accent/30" placeholder="한 줄로 남겨보세요"></textarea></details></section>
-            <button type="submit" id="submitBtn" class="w-full mt-4 bg-gradient-to-br from-accent to-[#c3915f] text-white font-bold text-lg py-4 rounded-xl active:scale-[0.98] transition-all shadow-md shadow-accent/20">주간 사주 분석 및 번호 생성 ☯</button>
+<section aria-label="이번 주의 다섯 이야기" class="space-y-3 mt-6"><h3 class="font-bold text-lg">이번 주의 다섯 이야기</h3><p class="text-sm text-soft">다섯 항목을 모두 작성하면 번호 생성 버튼이 활성화됩니다. 이야기는 기기에만 저장됩니다. 아래 버튼을 누르면 주간 사주를 비교해 참고 요일과 번호 5세트를 함께 만듭니다.</p><details class="glass-card rounded-xl p-4"><summary class="font-bold cursor-pointer">좋았던 일</summary><label for="reflection-joy" class="text-sm">좋았던 일 · 최대 500자</label><textarea id="reflection-joy" maxlength="500" rows="3" class="w-full mt-2 p-3 rounded-xl border border-accent/30" placeholder="한 줄로 남겨보세요"></textarea></details><details class="glass-card rounded-xl p-4"><summary class="font-bold cursor-pointer">아쉬웠던 일</summary><label for="reflection-release" class="text-sm">아쉬웠던 일 · 최대 500자</label><textarea id="reflection-release" maxlength="500" rows="3" class="w-full mt-2 p-3 rounded-xl border border-accent/30" placeholder="한 줄로 남겨보세요"></textarea></details><details class="glass-card rounded-xl p-4"><summary class="font-bold cursor-pointer">고마웠던 일</summary><label for="reflection-gratitude" class="text-sm">고마웠던 일 · 최대 500자</label><textarea id="reflection-gratitude" maxlength="500" rows="3" class="w-full mt-2 p-3 rounded-xl border border-accent/30" placeholder="한 줄로 남겨보세요"></textarea></details><details class="glass-card rounded-xl p-4"><summary class="font-bold cursor-pointer">내가 해낸 일</summary><label for="reflection-achievement" class="text-sm">내가 해낸 일 · 최대 500자</label><textarea id="reflection-achievement" maxlength="500" rows="3" class="w-full mt-2 p-3 rounded-xl border border-accent/30" placeholder="한 줄로 남겨보세요"></textarea></details><details class="glass-card rounded-xl p-4"><summary class="font-bold cursor-pointer">다음 주의 바람</summary><label for="reflection-beginning" class="text-sm">다음 주의 바람 · 최대 500자</label><textarea id="reflection-beginning" maxlength="500" rows="3" class="w-full mt-2 p-3 rounded-xl border border-accent/30" placeholder="한 줄로 남겨보세요"></textarea></details></section>
+            <button type="submit" id="submitBtn" disabled class="w-full mt-4 bg-gradient-to-br from-accent to-[#c3915f] text-white font-bold text-lg py-4 rounded-xl active:scale-[0.98] transition-all shadow-md shadow-accent/20">주간 사주 분석 및 번호 생성 ☯</button>
         </form>
     </section>
 
@@ -419,8 +416,22 @@
         e.target.value = val;
     });
 
+    const reflectionTopics = ['joy','release','gratitude','achievement','beginning'];
+    function reflectionsComplete() {
+        return reflectionTopics.every(topic => {
+            const text = document.getElementById('reflection-' + topic).value.trim();
+            return text.length > 0 && [...text].length <= 500;
+        });
+    }
+    function updateReflectionReadiness() {
+        document.getElementById('submitBtn').disabled = !reflectionsComplete();
+    }
+    reflectionTopics.forEach(topic => document.getElementById('reflection-' + topic).addEventListener('input', updateReflectionReadiness));
+    updateReflectionReadiness();
+
     document.getElementById('destinyForm').addEventListener('submit', async function(e) {
         e.preventDefault();
+        if (!reflectionsComplete()) { alert("이번 주의 다섯 이야기를 모두 작성해주세요."); return; }
         const nameInput = document.getElementById('inputName').value.trim();
         const name = (nameInput || "익명").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
         const birth = document.getElementById('inputBirth').value;

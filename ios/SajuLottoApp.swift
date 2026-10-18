@@ -205,7 +205,7 @@ struct AnalysisWebView: UIViewRepresentable {
             let entries = ReflectionTopic.allCases.map { ["topic": $0.rawValue, "text": reflections.card(for: $0)?.text ?? ""] }
             guard let data = try? JSONSerialization.data(withJSONObject: entries, options: [.fragmentsAllowed]),
                   let json = String(data: data, encoding: .utf8) else { return }
-            webView.evaluateJavaScript("(\(json)).forEach(e => { const field = document.getElementById('reflection-' + e.topic); if (field) field.value = e.text; });", completionHandler: nil)
+            webView.evaluateJavaScript("(\(json)).forEach(e => { const field = document.getElementById('reflection-' + e.topic); if (field) field.value = e.text; }); updateReflectionReadiness();", completionHandler: nil)
         }
         func webView(_ webView: WKWebView, decidePolicyFor action: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
             decisionHandler(action.request.url?.isFileURL == true ? .allow : .cancel)
@@ -306,13 +306,18 @@ struct AnalysisWebView: UIViewRepresentable {
                 }.tabItem { Label("기록", systemImage: "bookmark") }
                 NavigationStack {
                     List {
+                        Section("재미로 즐기는 오프라인 사주 · 번호 생성") {
+                            Text("당첨을 예측하거나 당첨 확률 상승을 보장하지 않습니다. 복권 구매·판매·베팅 기능은 없습니다. 양력만 지원합니다. 절기는 검증된 한국천문연구원 자료 또는 천문 계산값을 사용하며 출처와 경계 한계를 표시합니다.")
+                            Text("입력한 이름·생년월일·성별·출생 시간·지역은 기기에서 계산하며 원문은 외부 서버로 전송하지 않습니다. 새 분석 또는 앱 종료 시 저장하지 않은 출생 입력 정보는 사라집니다. 번호 저장을 누르면 입력 정보도 번호와 함께 기기에 보관되며 기록에서 삭제할 수 있습니다.")
+                            Text("AI 해석은 별도 동의를 받은 뒤 계산된 사주·오행·주간 비교·번호·십성·지장간·절기 이름·계산 방식·불확실성 경고를 Cloudflare와 DeepSeek에 전송합니다. 이름·생년월일 원문·정확한 출생 시각·지역·경도값과 이야기 본문은 전송하지 않습니다.")
+                        }
                         Section("데이터 관리") {
                             Button("앱 데이터 초기화", role: .destructive) { confirmReset = true }
                                 .accessibilityIdentifier("app-reset")
                             Text("저장된 회고 카드·본문·손그림·번호 및 입력 정보와 현재 분석 결과를 삭제하고 처음 화면으로 돌아갑니다.").font(.caption).foregroundStyle(.secondary)
                         }
                         Section("다섯 이야기와 주간 도감") {
-                            Text("분석 화면에서 생년월일과 다섯 이야기를 입력하고 하단 버튼을 누르면, 주간 사주 점수를 비교해 참고 요일을 선정하고 그 날의 오행을 반영한 오락용 번호 5세트를 만듭니다. 작성한 이야기는 해당 번호와 도감에 저장됩니다. 동일한 출생 정보와 주간 기준으로 다시 분석하면 같은 번호가 나옵니다. 기록 내용과 감정은 당첨 확률에 영향을 주지 않습니다.")
+                            Text("분석 화면에서 생년월일과 다섯 이야기를 모두 입력해야 하단 버튼이 활성화됩니다. 버튼을 누르면, 주간 사주 점수를 비교해 참고 요일을 선정하고 그 날의 오행을 반영한 오락용 번호 5세트를 만듭니다. 작성한 이야기는 해당 번호와 도감에 저장됩니다. 동일한 출생 정보와 주간 기준으로 다시 분석하면 같은 번호가 나옵니다. 기록 내용과 감정은 당첨 확률에 영향을 주지 않습니다.")
                             Text("회고 본문과 손그림은 기기에만 저장하며 AI 서버에 보내지 않습니다. 기기 백업에 포함될 수 있습니다. 공유 미리보기에서는 본문을 기본적으로 숨기며 손그림은 포함되므로 사적인 표시가 없는지 확인하세요. 카드 상세에서 수정·삭제할 수 있습니다.")
                         }
                         Section("서비스 안내") {

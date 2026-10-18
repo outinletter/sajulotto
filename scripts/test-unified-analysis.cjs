@@ -3,7 +3,7 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const nodes = new Map();
 function node(id) {
- if (!nodes.has(id)) nodes.set(id, {value:id==='inputExactTime'?'12:00':id.startsWith('reflection-')?'private journal':'',innerHTML:'',textContent:'',classList:{add(){},remove(){}},querySelectorAll:()=>Array.from({length:6},()=>({classList:{remove(){}},innerHTML:''}))});
+ if (!nodes.has(id)) nodes.set(id, {value:id==='inputExactTime'?'12:00':id.startsWith('reflection-')?'private journal':'',addEventListener(){},innerHTML:'',textContent:'',classList:{add(){},remove(){}},querySelectorAll:()=>Array.from({length:6},()=>({classList:{remove(){}},innerHTML:''}))});
  return nodes.get(id);
 }
 let saved;
@@ -14,6 +14,14 @@ for(const path of ['vendor/solar-terms.js','vendor/saju-calendar.js']) vm.runInC
 const html=fs.readFileSync('ios/Web/index.html','utf8');
 vm.runInContext([...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m=>m[1]).join('\n'),context);
 function run(day){vm.runInContext(`buildWeeklyDashboard('test',{year:1995,month:5,day:${day}},'unknown',127.02); generateFinalNumbers();`,context);return JSON.stringify(context.window.sajuWeeklyContext);}
+assert.equal(node('submitBtn').disabled,false);
+node('reflection-joy').value='   ';
+vm.runInContext('updateReflectionReadiness()',context);
+assert.equal(node('submitBtn').disabled,true);
+node('reflection-joy').value='완료';
+vm.runInContext('updateReflectionReadiness()',context);
+assert.equal(node('submitBtn').disabled,false);
+assert(!html.includes('aria-label="서비스 및 개인정보 안내"'));
 const first=run(12), data=JSON.parse(first);
 assert.equal(data.days.find(d=>d.score===Math.max(...data.days.map(x=>x.score))).day,data.selectedDay);
 assert.equal(data.numberSets.length,5);
