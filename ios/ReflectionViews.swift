@@ -153,7 +153,6 @@ private struct ReflectionEditor: View {
     @State private var text: String
     @State private var mood: ReflectionMood
     @State private var strokes: [ReflectionStroke]
-    @State private var active: [ReflectionPoint] = []
     @State private var error: String?
     @State private var saving = false
     @FocusState private var textFocused: Bool
@@ -189,30 +188,6 @@ private struct ReflectionEditor: View {
                     .focused($textFocused).accessibilityIdentifier("reflection-text")
                 Text("잘 쓸 필요 없어요. 다른 사람의 실명이나 연락처는 적지 않아도 됩니다.")
                     .font(.caption).foregroundStyle(.secondary)
-            }
-            VStack(alignment: .leading, spacing: 10) {
-                HStack {
-                    Text("03  한 획으로 마무리 · 선택").font(.subheadline.weight(.semibold))
-                    Spacer()
-                    Button("지우기") { strokes = []; active = [] }.font(.caption)
-                }
-                GeometryReader { geometry in
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 20).fill(.white.opacity(0.8))
-                        if strokes.isEmpty && active.isEmpty { Text("손가락으로 오늘의 흔적을 남겨요").font(.caption).foregroundStyle(.secondary) }
-                        ReflectionInk(strokes: strokes + (active.isEmpty ? [] : [ReflectionStroke(points: active)]), color: mood.color)
-                    }
-                    .contentShape(Rectangle())
-                    .gesture(DragGesture(minimumDistance: 0)
-                        .onChanged { value in
-                            guard strokes.count < 64, active.count < 256 else { return }
-                            active.append(ReflectionPoint(x: min(1, max(0, value.location.x / max(1, geometry.size.width))), y: min(1, max(0, value.location.y / max(1, geometry.size.height)))))
-                        }
-                        .onEnded { _ in
-                            if !active.isEmpty { strokes.append(ReflectionStroke(points: active)); active = [] }
-                        })
-                    .accessibilityLabel("오늘의 손그림, 선택 항목").accessibilityIdentifier("reflection-ink")
-                }.frame(height: 130)
             }
             Text(existing == nil ? "한 주에 주제별 카드 한 장을 만들어요. 번호는 기기에서 무작위로 생성되며, 다시 보거나 글을 고쳐도 유지됩니다." : "글과 색을 수정해도 기존 번호와 카드는 유지됩니다.")
                 .font(.caption).foregroundStyle(.secondary).lineSpacing(4)

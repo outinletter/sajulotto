@@ -120,6 +120,10 @@ enum ReflectionError: LocalizedError {
         guard readable else { throw ReflectionError.unreadable }
         let updated = cards.filter { $0.id != card.id }; try persist(updated); cards = updated
     }
+    func reset() throws {
+        if FileManager.default.fileExists(atPath: file.path) { try FileManager.default.removeItem(at: file) }
+        cards = []; readable = true; errorMessage = nil
+    }
     private func persist(_ updated: [ReflectionCard]) throws {
         try FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
         let data = try JSONEncoder().encode(updated)

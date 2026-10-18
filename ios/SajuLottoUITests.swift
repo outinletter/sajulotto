@@ -234,4 +234,34 @@ final class SajuLottoUITests: XCTestCase {
         XCTAssertTrue(app.buttons["reflection-result-gratitude"].exists)
         XCTAssertEqual(results.count, 2)
     }
+
+    func testResetRequiresConfirmationAndPersists() throws {
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        app.launchArguments = ["-AppleLanguages", "(ko)", "-AppleLocale", "ko_KR"]
+        app.launchEnvironment["REFLECTION_TEST_STORE"] = UUID().uuidString
+        app.launch()
+        let topic = app.buttons["reflection-topic-joy"]
+        XCTAssertTrue(topic.waitForExistence(timeout: 10))
+        if !topic.isHittable { scrollReflection(app) }; topic.tap()
+        let field = app.descendants(matching: .any).matching(identifier: "reflection-text").firstMatch
+        XCTAssertTrue(field.waitForExistence(timeout: 5)); field.tap(); field.typeText("RESET TEST ONLY")
+        if app.buttons["입력 완료"].exists { app.buttons["입력 완료"].tap() }
+        let save = app.buttons["reflection-save"]
+        for _ in 0..<5 { if save.isHittable { break }; scrollReflection(app) }; save.tap()
+        XCTAssertTrue(app.buttons["reflection-result-joy"].waitForExistence(timeout: 8))
+        app.tabBars.buttons["안내"].tap(); app.buttons["app-reset"].tap()
+        XCTAssertTrue(app.buttons["모든 데이터 삭제"].waitForExistence(timeout: 5))
+        app.buttons["취소"].tap()
+        app.tabBars.buttons["회고"].tap()
+        XCTAssertTrue(app.buttons["reflection-result-joy"].exists)
+        app.tabBars.buttons["안내"].tap(); app.buttons["app-reset"].tap()
+        app.buttons["모든 데이터 삭제"].tap()
+        XCTAssertTrue(topic.waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["reflection-result-joy"].exists)
+        app.terminate(); app.launch()
+        XCTAssertTrue(topic.waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["reflection-result-joy"].exists)
+        capture("14-초기화완료")
+    }
 }

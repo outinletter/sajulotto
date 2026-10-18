@@ -10,8 +10,15 @@ struct SavedReport: Codable, Identifiable {
 
 final class ReportStore: ObservableObject {
     @Published var reports: [SavedReport] = []
-    init() {
-        if let data = UserDefaults.standard.data(forKey: "savedReports"),
+    private let defaults: UserDefaults
+    init(defaults: UserDefaults? = nil) {
+        var selected = defaults ?? .standard
+        #if DEBUG
+        if defaults == nil, let raw = ProcessInfo.processInfo.environment["REFLECTION_TEST_STORE"], let id = UUID(uuidString: raw),
+           let isolated = UserDefaults(suiteName: "SajuLottoTests." + id.uuidString) { selected = isolated }
+        #endif
+        self.defaults = selected
+        if let data = selected.data(forKey: "savedReports"),
            let saved = try? JSONDecoder().decode([SavedReport].self, from: data) { reports = saved }
     }
     func save(_ text: String, inputInfo: String? = nil) {
@@ -19,8 +26,9 @@ final class ReportStore: ObservableObject {
         persist()
     }
     func delete(_ offsets: IndexSet) { reports.remove(atOffsets: offsets); persist() }
+    func reset() { defaults.removeObject(forKey: "savedReports"); reports = [] }
     func persist() {
-        if let data = try? JSONEncoder().encode(reports) { UserDefaults.standard.set(data, forKey: "savedReports") }
+        if let data = try? JSONEncoder().encode(reports) { defaults.set(data, forKey: "savedReports") }
     }
 }
 
@@ -200,6 +208,19 @@ struct AnalysisWebView: UIViewRepresentable {
     @StateObject private var reflections = ReflectionStore()
     @StateObject private var store = ReportStore()
     @StateObject private var analysis = AnalysisViewModel()
+    @State private var confirmReset = false
+    @State private var resetError: String?
+    @State private var resetID = UUID()
+    private func resetApp() {
+        do {
+            try reflections.reset()
+            store.reset()
+            analysis.cancelAI()
+            analysis.showAIResult = false; analysis.showAIConsent = false; analysis.showMessage = false; analysis.message = ""
+            analysis.webView.reload()
+            resetID = UUID()
+        } catch { resetError = "초기화하지 못했습니다. 잠시 후 다시 시도해주세요." }
+    }
     var body: some Scene {
         WindowGroup {
             TabView {
@@ -268,6 +289,11 @@ struct AnalysisWebView: UIViewRepresentable {
                 }.tabItem { Label("기록", systemImage: "bookmark") }
                 NavigationStack {
                     List {
+                        Section("데이터 관리") {
+                            Button("앱 데이터 초기화", role: .destructive) { confirmReset = true }
+                                .accessibilityIdentifier("app-reset")
+                            Text("저장된 회고 카드·본문·손그림·번호 및 입력 정보와 현재 분석 결과를 삭제하고 처음 화면으로 돌아갑니다.").font(.caption).foregroundStyle(.secondary)
+                        }
                         Section("한 줄 회고와 주간 도감") {
                             Text("다섯 가지 주제 중 하나에 마음 색과 한 줄을 남기면 번호 카드가 완성됩니다. 한 주에 주제별 한 장을 만들고, 다시 열거나 수정해도 번호는 유지됩니다. 번호는 기기에서 1~45 중 중복 없이 6개를 무작위로 선택하며 기록 내용과 감정은 당첨 확률에 영향을 주지 않습니다.")
                             Text("회고 본문과 손그림은 기기에만 저장하며 AI 서버에 보내지 않습니다. 기기 백업에 포함될 수 있습니다. 공유 미리보기에서는 본문을 기본적으로 숨기며 손그림은 포함되므로 사적인 표시가 없는지 확인하세요. 카드 상세에서 수정·삭제할 수 있습니다.")
@@ -286,7 +312,14 @@ struct AnalysisWebView: UIViewRepresentable {
                         }
                     }.navigationTitle("안내")
                 }.tabItem { Label("안내", systemImage: "info.circle") }
-            }.tint(Color(red: 0.63, green: 0.45, blue: 0.27))
+            }.id(resetID).tint(Color(red: 0.63, green: 0.45, blue: 0.27))
+                .confirmationDialog("앱 데이터를 모두 초기화할까요?", isPresented: $confirmReset, titleVisibility: .visible) {
+                    Button("모든 데이터 삭제", role: .destructive) { resetApp() }
+                    Button("취소", role: .cancel) {}
+                } message: { Text("이 기기의 회고 카드와 저장한 번호·입력 정보가 삭제됩니다. 이 작업은 되돌릴 수 없습니다.") }
+                .alert("초기화 안내", isPresented: Binding(get: { resetError != nil }, set: { if !$0 { resetError = nil } })) {
+                    Button("확인") { resetError = nil }
+                } message: { Text(resetError ?? "") }
         }
     }
 }

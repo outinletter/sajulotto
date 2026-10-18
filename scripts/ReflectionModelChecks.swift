@@ -33,6 +33,12 @@ import Foundation
         let protected = ReflectionStore(file:file)
         do { _ = try protected.save(topic:.joy,mood:.warm,text:"새 글",strokes:[]); assertionFailure("corruption overwritten") } catch ReflectionError.unreadable {}
         let preserved = try Data(contentsOf:file); assert(preserved == corrupt)
+        try protected.reset()
+        assert(protected.cards.isEmpty && !FileManager.default.fileExists(atPath: file.path))
+        _ = try protected.save(topic:.joy,mood:.warm,text:"초기화 후 새 기록",strokes:[],now:date)
+        try protected.reset()
+        try protected.reset()
+        assert(ReflectionStore(file:file).cards.isEmpty)
         print("PASS: KST week boundaries, uniform-sample invariants, stable numbers on edit, reload, private sharing, delete, invalid input and corruption protection")
     }
 }
