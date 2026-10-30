@@ -14,6 +14,7 @@
 		A00000000000000000000038 /* SajuLottoUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000031 /* SajuLottoUITests.swift */; };
 		B00000000000000000000042 /* ReflectionModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000040 /* ReflectionModels.swift */; };
 		B00000000000000000000043 /* ReflectionViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00000000000000000000041 /* ReflectionViews.swift */; };
+        C00000000000000000000001 /* NativeAnalysis.swift in Sources */ = {isa = PBXBuildFile; fileRef = C00000000000000000000002 /* NativeAnalysis.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -36,6 +37,7 @@
 		A00000000000000000000032 /* SajuLottoUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SajuLottoUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		B00000000000000000000040 /* ReflectionModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReflectionModels.swift; sourceTree = "<group>"; };
 		B00000000000000000000041 /* ReflectionViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReflectionViews.swift; sourceTree = "<group>"; };
+        C00000000000000000000002 /* NativeAnalysis.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeAnalysis.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -61,6 +63,7 @@
 			children = (
 				B00000000000000000000040 /* ReflectionModels.swift */,
 				B00000000000000000000041 /* ReflectionViews.swift */,
+                C00000000000000000000002 /* NativeAnalysis.swift */,
 				A00000000000000000000006 /* SajuLottoApp.swift */,
 				A00000000000000000000007 /* Web */,
 				A00000000000000000000008 /* Assets.xcassets */,
@@ -172,6 +175,7 @@
 			files = (
 				B00000000000000000000042 /* ReflectionModels.swift in Sources */,
 				B00000000000000000000043 /* ReflectionViews.swift in Sources */,
+                C00000000000000000000001 /* NativeAnalysis.swift in Sources */,
 				A00000000000000000000015 /* SajuLottoApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

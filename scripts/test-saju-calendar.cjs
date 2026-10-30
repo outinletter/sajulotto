@@ -37,11 +37,12 @@ for(const [year,terms] of Object.entries(w.SajuSolarTerms.years)) {
 assert(fs.readFileSync('vendor/solar-terms.js').equals(fs.readFileSync('ios/Web/vendor/solar-terms.js')));
 assert(fs.readFileSync('vendor/saju-calendar.js').equals(fs.readFileSync('ios/Web/vendor/saju-calendar.js')));
 console.log('PASS: 입춘 전후 연·월주, 절입 경고, 시각 미상, 과거 출처, 자정 날짜 보정, 경도, 129년 데이터, 번들 일치');
-// Validate the exact native request extractor without contacting any service.
-const native = fs.readFileSync('ios/SajuLottoApp.swift','utf8');
-const extraction = native.match(/webView\.evaluateJavaScript\(#"""([\s\S]*?)"""#\)/)[1];
-const privacy = {window:{sajuWeeklyContext:{numberSets:[[1,2,3,4,5,6]]},sajuCalculation:{pillars:[{value:'甲子',tenGod:'일간',hiddenStems:[{stem:'癸',tenGod:'정인'}]}],interpretationLimits:'한계',basis:{source:'KASI',timePolicy:'KST',precision:'출생 시·분 입력',warnings:[],previousTerm:'입춘 1995-02-04 16:00 KST',nextTerm:'경칩 1995-03-06 10:00 KST',longitudeCorrectionMinutes:-32}}},document:{getElementById:id=>({classList:{contains:()=>false},innerText:id})}};
-const extracted=vm.runInNewContext(extraction,privacy);
-assert(extracted.includes('hiddenStems')); assert(extracted.includes('입춘'));
-assert(!extracted.includes('1995-02-04'));assert(!extracted.includes('longitudeCorrectionMinutes'));assert(!extracted.includes('16:00'));
-console.log('PASS: AI payload includes approved derived data and excludes birth date/time and longitude');
+// Native rendering uses the same pure functions without a DOM or WebView.
+const nativeContext = {window:{}, Date};
+vm.createContext(nativeContext);
+for (const file of ['solar-terms','saju-calendar','native-engine']) vm.runInContext(fs.readFileSync('ios/Web/vendor/'+file+'.js','utf8'), nativeContext);
+const result = JSON.parse(vm.runInContext(`nativeChart({year:1995,month:5,day:12,timeVal:'unknown',longitude:127,exactTime:'',weekYear:2026,weekMonth:10,weekDay:31})`,nativeContext));
+assert.equal(result.pillars.length,4); assert.equal(result.pillars[3].value,'미상'); assert.equal(result.days.length,7);
+assert.equal(result.days[0].date,'2026-10-25'); assert.equal(result.days[6].date,'2026-10-31');
+assert.equal(result.basis.longitudeCorrectionMinutes,-32);
+console.log('PASS: native adapter has no DOM dependency and preserves original calculation results');

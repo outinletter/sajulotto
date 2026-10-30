@@ -1,5 +1,10 @@
 import SwiftUI
-import WebKit
+
+enum AppTheme {
+    static let paper = Color(red: 0.97, green: 0.95, blue: 0.91)
+    static let accent = Color(red: 0.45, green: 0.31, blue: 0.20)
+    static let secondary = Color(red: 0.37, green: 0.34, blue: 0.30)
+}
 
 struct SavedReport: Codable, Identifiable {
     var id = UUID()
@@ -10,8 +15,16 @@ struct SavedReport: Codable, Identifiable {
 
 final class ReportStore: ObservableObject {
     @Published var reports: [SavedReport] = []
+    private let defaults: UserDefaults
     init() {
-        if let data = UserDefaults.standard.data(forKey: "savedReports"),
+        #if DEBUG
+        if let raw = ProcessInfo.processInfo.environment["REFLECTION_TEST_STORE"], let id = UUID(uuidString: raw) {
+            defaults = UserDefaults(suiteName: "SajuLottoTests." + id.uuidString)!
+        } else { defaults = .standard }
+        #else
+        defaults = .standard
+        #endif
+        if let data = defaults.data(forKey: "savedReports"),
            let saved = try? JSONDecoder().decode([SavedReport].self, from: data) { reports = saved }
     }
     func save(_ text: String, inputInfo: String? = nil) {
@@ -20,12 +33,44 @@ final class ReportStore: ObservableObject {
     }
     func delete(_ offsets: IndexSet) { reports.remove(atOffsets: offsets); persist() }
     func persist() {
-        if let data = try? JSONEncoder().encode(reports) { UserDefaults.standard.set(data, forKey: "savedReports") }
+        if let data = try? JSONEncoder().encode(reports) { defaults.set(data, forKey: "savedReports") }
     }
 }
 
 @MainActor final class AnalysisViewModel: ObservableObject {
-    let webView: WKWebView
+    @Published var chart: NativeChart?
+    @Published var analysisID = UUID()
+    @Published var numberSets: [[Int]] = []
+    private var savedInput = ""
+    var numberText: String {
+        var lines = ["참고 요일: " + (chart?.bestDay ?? ""), ""]
+        for (index, numbers) in numberSets.enumerated() {
+            let label = String(UnicodeScalar(65 + index)!)
+            let values = numbers.map { String($0) }.joined(separator: ", ")
+            lines.append("조합 \(label): \(values)")
+        }
+        return lines.joined(separator: "\n")
+    }
+    func calculate(birth: Date, time: Date?, longitude: Double, name: String, city: String) {
+        do {
+            let result = try NativeCalendarEngine.calculate(birth: birth, time: time, longitude: longitude)
+            cancelAI()
+            chart = result
+            var generator = SystemRandomNumberGenerator()
+            numberSets = (0..<5).map { _ in Array((1...45).shuffled(using: &generator).prefix(6)).sorted() }
+            let formatter = DateFormatter(); formatter.locale = Locale(identifier: "en_US_POSIX"); formatter.calendar = Calendar(identifier: .gregorian); formatter.timeZone = TimeZone(secondsFromGMT: 9 * 3600); formatter.dateFormat = "yyyy-MM-dd"
+            savedInput = "이름: " + (name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "익명" : String(name.prefix(100))) + "\n생년월일 (양력): " + formatter.string(from: birth)
+            formatter.dateFormat = "HH:mm"
+            savedInput += "\n출생 시간: " + (time.map { formatter.string(from: $0) } ?? "미상") + "\n출생 지역: " + city
+        } catch { message = error.localizedDescription; showMessage = true }
+    }
+    func reset() { cancelAI(); chart = nil; numberSets = []; savedInput = ""; analysisID = UUID() }
+    func saveNative(to store: ReportStore) {
+        guard chart != nil, numberSets.count == 5 else { return }
+        store.save(numberText, inputInfo: savedInput)
+        message = "입력 정보와 번호 조합을 기기에 저장했습니다. 기록 탭에서 공유하거나 삭제할 수 있습니다."
+        showMessage = true
+    }
     @Published var message = ""
     @Published var showMessage = false
     @Published var showAIConsent = false
@@ -36,26 +81,24 @@ final class ReportStore: ObservableObject {
     private var cachedDetails: String?
     private var cachedText = ""
     private var requestID = UUID()
+    private var pendingAIRequest = false
+    func approveAI() { pendingAIRequest = true; showAIConsent = false }
+    func startApprovedAI() {
+        guard pendingAIRequest else { return }
+        pendingAIRequest = false
+        requestAI()
+    }
     private func analysisDetails() async throws -> String? {
-        let value = try await webView.evaluateJavaScript(#"""
-                (() => {
-                    if (document.getElementById('dashboard').classList.contains('hidden')) return null;
-                    const pillars = ['year','month','day','hour'].map(p => document.getElementById('saju-'+p+'-hanja').innerText.replace(/\n/g, ''));
-                    const elements = ['wood','fire','earth','metal','water'].map(p => document.getElementById('dist-'+p).innerText);
-                    const calculation = window.sajuCalculation;
-                    const basis = calculation?.basis;
-                    const aiCalculation = calculation && {pillars:calculation.pillars, interpretationLimits:calculation.interpretationLimits,
-                        basis:{source:basis.source,timePolicy:basis.timePolicy,precision:basis.precision,warnings:basis.warnings,
-                            previousTerm:basis.previousTerm?.split(' ')[0],nextTerm:basis.nextTerm?.split(' ')[0]}};
-                    return '사주팔자(년월일시): '+pillars.join(', ')+'; 오행(목화토금수): '+elements.join(', ')+'; 참고 요일: '+document.getElementById('bestDayInfo').innerText+'; 주간 비교 및 참고 번호: '+JSON.stringify(window.sajuWeeklyContext)+'; 원국과 계산 근거: '+JSON.stringify(aiCalculation);
-                })()
-                """#)
-        return value as? String
+        guard let chart else { return nil }
+        return chart.aiDetails + "\nnumberSets: " + String(data: try JSONEncoder().encode(numberSets), encoding: .utf8)!
     }
     func openAI() {
         Task {
             do {
                 let details = try await analysisDetails()
+                guard details != nil else {
+                    message = "먼저 사주 분석을 완료해주세요."; showMessage = true; return
+                }
                 if let details, details == cachedDetails, !cachedText.isEmpty {
                     aiText = cachedText; showAIResult = true
                 } else if aiLoading {
@@ -129,70 +172,8 @@ final class ReportStore: ObservableObject {
         }
     }
     func cancelAI() {
-        requestID = UUID(); aiTask?.cancel(); aiTask = nil
+        requestID = UUID(); aiTask?.cancel(); aiTask = nil; pendingAIRequest = false
         aiLoading = false; aiText = ""; cachedDetails = nil; cachedText = ""
-    }
-    init() {
-        let config = WKWebViewConfiguration()
-        config.websiteDataStore = .nonPersistent()
-        webView = WKWebView(frame: .zero, configuration: config)
-        webView.isOpaque = false
-        webView.backgroundColor = UIColor(red: 0.98, green: 0.97, blue: 0.95, alpha: 1)
-    }
-    func save(to store: ReportStore) {
-        webView.evaluateJavaScript(#"""
-        (() => {
-          const dashboard = document.getElementById('dashboard');
-          if (!dashboard || dashboard.classList.contains('hidden')) return null;
-          const sets = Array.from(document.querySelectorAll('[id^="numberContainer"]'))
-            .map(el => el.innerText.trim().split(/\s+/));
-          if (sets.length !== 5 || sets.some(s => s.length !== 6 || new Set(s).size !== 6 || s.some(n => !/^\d{1,2}$/.test(n) || Number(n) < 1 || Number(n) > 45))) return null;
-          const selected = id => document.getElementById(id).selectedOptions[0].textContent.trim();
-          const inputInfo = '이름: ' + (document.getElementById('inputName').value.trim() || '익명') + '\n' +
-            '생년월일 (양력): ' + document.getElementById('inputBirth').value + '\n' +
-            '성별: ' + (document.querySelector('input[name="gender"]:checked').value === 'M' ? '남성' : '여성') + '\n' +
-            '출생 시간: ' + (document.getElementById('inputExactTime').value || selected('inputTime')) + '\n출생 지역: ' + selected('inputCity');
-          const text = '행운 요일: ' + document.getElementById('bestDayInfo').innerText + '\n\n' +
-            sets.map((s, i) => '조합 ' + String.fromCharCode(65 + i) + ': ' + s.join(', ')).join('\n');
-          return {text, inputInfo};
-        })()
-        """#) { [weak self] value, error in
-            guard let self else { return }
-            if let result = value as? [String: String], let text = result["text"], error == nil {
-                store.save(text, inputInfo: result["inputInfo"])
-                self.message = "입력 정보와 번호 조합을 기기에 저장했습니다. 기록 탭에서 공유하거나 삭제할 수 있습니다."
-            } else { self.message = "먼저 분석을 완료하고 번호가 모두 표시될 때까지 기다려주세요." }
-            self.showMessage = true
-        }
-    }
-}
-
-struct AnalysisWebView: UIViewRepresentable {
-    @ObservedObject var model: AnalysisViewModel
-    func makeCoordinator() -> Coordinator { Coordinator() }
-    func makeUIView(context: Context) -> WKWebView {
-        let view = model.webView
-        view.navigationDelegate = context.coordinator
-        view.uiDelegate = context.coordinator
-        if let url = Bundle.main.url(forResource: "index", withExtension: "html", subdirectory: "Web") {
-            view.loadFileURL(url, allowingReadAccessTo: url.deletingLastPathComponent())
-        }
-        return view
-    }
-    func updateUIView(_ view: WKWebView, context: Context) {}
-    final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate {
-        func webView(_ webView: WKWebView, decidePolicyFor action: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
-            decisionHandler(action.request.url?.isFileURL == true ? .allow : .cancel)
-        }
-        func webView(_ webView: WKWebView, runJavaScriptAlertPanelWithMessage message: String, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping () -> Void) {
-            guard let scene = webView.window?.windowScene,
-                  let root = scene.windows.first(where: { $0.isKeyWindow })?.rootViewController else { completionHandler(); return }
-            var presenter = root
-            while let presented = presenter.presentedViewController { presenter = presented }
-            let alert = UIAlertController(title: "입력 확인", message: message, preferredStyle: .alert)
-            alert.addAction(UIAlertAction(title: "확인", style: .default) { _ in completionHandler() })
-            presenter.present(alert, animated: true)
-        }
     }
 }
 
@@ -206,36 +187,34 @@ struct AnalysisWebView: UIViewRepresentable {
                 ReflectionHomeView(store: reflections).tabItem { Label("회고", systemImage: "pencil.and.outline") }
                 ReflectionCollectionView(store: reflections).tabItem { Label("도감", systemImage: "book.closed") }
                 NavigationStack {
-                    AnalysisWebView(model: analysis)
-                        .navigationTitle("천기누설")
+                    NativeAnalysisView(model: analysis, store: store)
+                        .id(analysis.analysisID)
+                        .navigationTitle("사주 돌아보기")
                         .navigationBarTitleDisplayMode(.inline)
                         .toolbar {
                             ToolbarItem(placement: .topBarLeading) {
-                                Button("새 분석", systemImage: "arrow.clockwise") { analysis.cancelAI(); analysis.webView.reload() }
+                                Button("새 분석", systemImage: "arrow.clockwise") { analysis.reset() }
                             }
                             ToolbarItemGroup(placement: .topBarTrailing) {
-                                Button("AI 해석", systemImage: "sparkles") { analysis.openAI() }
-                                Button("번호 저장", systemImage: "bookmark") { analysis.save(to: store) }
+                                Button("AI 해석", systemImage: "sparkles") { analysis.openAI() }.disabled(analysis.chart == nil)
+
                             }
                         }
                         .alert("안내", isPresented: $analysis.showMessage) { Button("확인", role: .cancel) {} } message: { Text(analysis.message) }
-                        .confirmationDialog("AI 분석 서비스로 정보 전송", isPresented: $analysis.showAIConsent, titleVisibility: .visible) {
-                            Button("동의하고 AI 해석 요청") { analysis.requestAI() }
-                            Button("취소", role: .cancel) {}
-                        } message: {
-                            Text("계산된 사주팔자·오행·주간 비교·번호 조합·십성·지장간·절기 이름·계산 방식·불확실성 경고를 sajulotto.outinletter.workers.dev(Cloudflare)와 api.deepseek.com(DeepSeek)에 전송하여 해설을 받습니다. 이름·생년월일 원문·정확한 출생 시각·지역·경도값은 전송하지 않습니다. 서버는 연결 IP를 확인할 수 있으며 처리·보관은 각 서비스 정책을 따릅니다. 동의하지 않아도 기본 분석과 번호 생성은 이용할 수 있습니다.")
+                        .sheet(isPresented: $analysis.showAIConsent, onDismiss: { analysis.startApprovedAI() }) {
+                            AIConsentView(model: analysis)
                         }
                         .sheet(isPresented: $analysis.showAIResult) {
                             NavigationStack {
                                 ScrollView {
                                     VStack(alignment: .leading, spacing: 20) {
-                                        Text("AI 생성 해석은 오류가 있을 수 있으며 당첨이나 재정적 이익을 예측하지 않습니다.").font(.footnote).foregroundStyle(.secondary)
+                                        Text("AI 생성 해석은 오류가 있을 수 있으며 당첨이나 재정적 이익을 예측하지 않습니다.").font(.footnote).foregroundStyle(AppTheme.secondary)
                                         if analysis.aiLoading { ProgressView("AI 해석을 요청하고 있습니다…") }
                                         AIArticleView(markdown: analysis.aiText).accessibilityElement(children: .combine).accessibilityIdentifier("aiResultText")
                                         Link("AI 제공업체 개인정보 처리방침", destination: URL(string: "https://cdn.deepseek.com/policies/en-US/deepseek-privacy-policy.html")!)
                                         Link("Cloudflare 개인정보 처리방침", destination: URL(string: "https://www.cloudflare.com/privacypolicy/")!)
                                     }.padding(.horizontal, 24).padding(.vertical, 28)
-                                }.background(Color(uiColor: .systemGroupedBackground)).navigationTitle("AI 해석").navigationBarTitleDisplayMode(.inline).toolbar {
+                                }.background(AppTheme.paper).navigationTitle("AI 해석").navigationBarTitleDisplayMode(.inline).toolbar {
                                     Button("닫기") { analysis.showAIResult = false }
                                 }
                             }
@@ -243,7 +222,7 @@ struct AnalysisWebView: UIViewRepresentable {
                 }.tabItem { Label("분석", systemImage: "sparkles") }
                 NavigationStack {
                     List {
-                        if store.reports.isEmpty { Text("분석 후 ‘번호 저장’을 누르면 이곳에서 번호를 확인할 수 있습니다.").foregroundStyle(.secondary) }
+                        if store.reports.isEmpty { Text("분석 후 ‘번호 저장’을 누르면 이곳에서 번호를 확인할 수 있습니다.").foregroundStyle(AppTheme.secondary) }
                         ForEach(store.reports) { report in
                             NavigationLink {
                                 ScrollView {
@@ -253,21 +232,27 @@ struct AnalysisWebView: UIViewRepresentable {
                                             Text(inputInfo).font(.subheadline).textSelection(.enabled)
                                         }
                                         SavedNumberView(text: report.text)
-                                        Text("오락용 번호이며 당첨을 예측하거나 당첨 확률을 높이지 않습니다.").font(.footnote).foregroundStyle(.secondary)
+                                        Text("오락용 번호이며 당첨을 예측하거나 당첨 확률을 높이지 않습니다.").font(.footnote).foregroundStyle(AppTheme.secondary)
                                         ShareLink(item: report.text + "\n\n오락용 번호입니다. 당첨을 보장하지 않습니다.") { Label("번호 공유", systemImage: "square.and.arrow.up") }
                                     }.padding()
                                 }.navigationTitle("저장한 번호")
                             } label: {
                                 VStack(alignment: .leading) {
                                     Text(report.created, format: .dateTime.year().month().day().hour().minute())
-                                    Text(report.text.components(separatedBy: "\n").first ?? "번호 조합").font(.caption).foregroundStyle(.secondary)
+                                    Text(report.text.components(separatedBy: "\n").first ?? "번호 조합").font(.caption).foregroundStyle(AppTheme.secondary)
                                 }
                             }
                         }.onDelete(perform: store.delete)
-                    }.navigationTitle("나의 기록").toolbar { EditButton() }
+                    }.scrollContentBackground(.hidden).background(AppTheme.paper).navigationTitle("나의 기록").navigationBarTitleDisplayMode(.inline).toolbar { EditButton() }
                 }.tabItem { Label("기록", systemImage: "bookmark") }
                 NavigationStack {
                     List {
+                        Section("개인정보와 지원") {
+                            NavigationLink("개인정보 처리방침") { PrivacyPolicyView() }
+                            Link("개발자 문의", destination: URL(string: "https://github.com/outinletter/sajulotto/issues")!)
+                            Text("문의 공개 게시물에는 이름·생년월일 등 개인정보를 올리지 마세요.").font(.footnote).foregroundStyle(AppTheme.secondary)
+                            Button("AI 요청 취소 및 임시 결과 삭제") { analysis.cancelAI() }
+                        }
                         Section("한 줄 회고와 주간 도감") {
                             Text("다섯 가지 주제 중 하나에 마음 색과 한 줄을 남기면 번호 카드가 완성됩니다. 한 주에 주제별 한 장을 만들고, 다시 열거나 수정해도 번호는 유지됩니다. 번호는 기기에서 1~45 중 중복 없이 6개를 무작위로 선택하며 기록 내용과 감정은 당첨 확률에 영향을 주지 않습니다.")
                             Text("회고 본문과 손그림은 기기에만 저장하며 AI 서버에 보내지 않습니다. 기기 백업에 포함될 수 있습니다. 공유 미리보기에서는 본문을 기본적으로 숨기며 손그림은 포함되므로 사적인 표시가 없는지 확인하세요. 카드 상세에서 수정·삭제할 수 있습니다.")
@@ -284,9 +269,9 @@ struct AnalysisWebView: UIViewRepresentable {
                         Section("오픈소스 고지") {
                             Text("Chart.js 4.4.8 · Tailwind CSS — MIT License. 과거 절기 보완 데이터는 Astronomy Engine 2.1.19(MIT)로 산출했습니다. 전체 라이선스는 앱 번들에 포함되어 있습니다.")
                         }
-                    }.navigationTitle("안내")
+                    }.scrollContentBackground(.hidden).background(AppTheme.paper).navigationTitle("안내").navigationBarTitleDisplayMode(.inline)
                 }.tabItem { Label("안내", systemImage: "info.circle") }
-            }.tint(Color(red: 0.63, green: 0.45, blue: 0.27))
+            }.tint(AppTheme.accent)
         }
     }
 }
@@ -320,7 +305,7 @@ private struct AIArticleView: View {
                         .accessibilityAddTraits(.isHeader)
                 } else if block.hasPrefix("- ") || block.hasPrefix("* ") {
                     HStack(alignment: .top, spacing: 12) {
-                        Text("•").foregroundStyle(.secondary)
+                        Text("•").foregroundStyle(AppTheme.secondary)
                         Text(inline(String(block.dropFirst(2)))).fixedSize(horizontal: false, vertical: true)
                     }
                     .padding(14).frame(maxWidth: .infinity, alignment: .leading)

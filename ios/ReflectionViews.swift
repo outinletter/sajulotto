@@ -1,6 +1,6 @@
 import SwiftUI
 
-private let reflectionPaper = Color(red: 0.97, green: 0.95, blue: 0.91)
+private let reflectionPaper = AppTheme.paper
 extension ReflectionMood {
     var color: Color {
         switch self {
@@ -23,12 +23,12 @@ struct ReflectionHomeView: View {
         NavigationStack(path: $path) {
             ScrollViewReader { proxy in
             ScrollView {
-                VStack(alignment: .leading, spacing: 26) {
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("A MOMENT, A LITTLE LIGHT").font(.caption2.weight(.semibold)).tracking(2).foregroundStyle(.secondary)
-                        Text("이번 주의\n여섯 장면").font(.system(size: 38, weight: .bold, design: .serif))
-                        Text("좋았던 일도, 아쉬웠던 일도.\n한 줄을 남기면 나만의 번호 카드가 완성돼요.")
-                            .font(.subheadline).foregroundStyle(.secondary).lineSpacing(5)
+                VStack(alignment: .leading, spacing: 20) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("이번 주의 여섯 장면")
+                            .font(.system(.title2, design: .serif).bold()).lineLimit(1).minimumScaleFactor(0.8)
+                        Text("한 줄의 회고를 모아 나만의 번호 카드를 완성해요.")
+                            .font(.subheadline).foregroundStyle(AppTheme.secondary).lineSpacing(3)
                     }
                     ReflectionAccumulatedView(cards: weekCards) { card in path.append(card.id) }
                         .id("reflection-results")
@@ -68,9 +68,9 @@ struct ReflectionHomeView: View {
                         Label("마음을 평가하지 않아요", systemImage: "lock.shield")
                             .font(.subheadline.weight(.semibold))
                         Text("한 가지만 써도 충분해요. 어떤 감정이든 같은 방식으로 번호를 만들어요. 기록은 기기에 보관하며 AI로 보내지 않습니다.")
-                            .font(.caption).foregroundStyle(.secondary).lineSpacing(4)
+                            .font(.caption).foregroundStyle(AppTheme.secondary).lineSpacing(4)
                         Text("번호는 1~45 중 6개를 무작위로 선택합니다. 사주·감정·글의 길이는 당첨 확률에 영향을 주지 않습니다.")
-                            .font(.caption2).foregroundStyle(.secondary)
+                            .font(.caption2).foregroundStyle(AppTheme.secondary)
                     }.padding(18).background(.white.opacity(0.7), in: RoundedRectangle(cornerRadius: 20))
                 }.padding(22)
             }
@@ -94,10 +94,10 @@ private struct ReflectionAccumulatedView: View {
             HStack {
                 Label("이번 주 모은 번호", systemImage: "circle.grid.2x3.fill").font(.headline)
                 Spacer()
-                Text("\(cards.count)세트").font(.caption).foregroundStyle(.secondary)
+                Text("\(cards.count)세트").font(.caption).foregroundStyle(AppTheme.secondary)
             }
             if cards.isEmpty {
-                Text("아래 카드에 한 줄을 남기면 번호가 한 세트씩 쌓여요.").font(.caption).foregroundStyle(.secondary)
+                Text("아래 카드에 한 줄을 남기면 번호가 한 세트씩 쌓여요.").font(.caption).foregroundStyle(AppTheme.secondary)
             }
             ForEach(cards) { card in
                 Button { onOpen(card) } label: {
@@ -131,7 +131,7 @@ private struct ReflectionTopicRow: View {
             VStack(alignment: .leading, spacing: 5) {
                 Text(topic.title).font(.headline).foregroundStyle(.primary)
                 Text(completed ? "이번 주 카드가 완성됐어요 · 수정하기" : topic.question)
-                    .font(.caption).foregroundStyle(.secondary).multilineTextAlignment(.leading)
+                    .font(.caption).foregroundStyle(AppTheme.secondary).multilineTextAlignment(.leading)
             }
             Spacer(minLength: 0)
             if completed { Image(systemName: "checkmark.circle.fill").foregroundStyle(.green) }
@@ -153,7 +153,6 @@ private struct ReflectionEditor: View {
     @State private var text: String
     @State private var mood: ReflectionMood
     @State private var strokes: [ReflectionStroke]
-    @State private var active: [ReflectionPoint] = []
     @State private var error: String?
     @State private var saving = false
     @FocusState private var textFocused: Bool
@@ -188,34 +187,10 @@ private struct ReflectionEditor: View {
                     .lineLimit(3...6).padding(16).background(.white, in: RoundedRectangle(cornerRadius: 16))
                     .focused($textFocused).accessibilityIdentifier("reflection-text")
                 Text("잘 쓸 필요 없어요. 다른 사람의 실명이나 연락처는 적지 않아도 됩니다.")
-                    .font(.caption).foregroundStyle(.secondary)
-            }
-            VStack(alignment: .leading, spacing: 10) {
-                HStack {
-                    Text("03  한 획으로 마무리 · 선택").font(.subheadline.weight(.semibold))
-                    Spacer()
-                    Button("지우기") { strokes = []; active = [] }.font(.caption)
-                }
-                GeometryReader { geometry in
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 20).fill(.white.opacity(0.8))
-                        if strokes.isEmpty && active.isEmpty { Text("손가락으로 오늘의 흔적을 남겨요").font(.caption).foregroundStyle(.secondary) }
-                        ReflectionInk(strokes: strokes + (active.isEmpty ? [] : [ReflectionStroke(points: active)]), color: mood.color)
-                    }
-                    .contentShape(Rectangle())
-                    .gesture(DragGesture(minimumDistance: 0)
-                        .onChanged { value in
-                            guard strokes.count < 64, active.count < 256 else { return }
-                            active.append(ReflectionPoint(x: min(1, max(0, value.location.x / max(1, geometry.size.width))), y: min(1, max(0, value.location.y / max(1, geometry.size.height)))))
-                        }
-                        .onEnded { _ in
-                            if !active.isEmpty { strokes.append(ReflectionStroke(points: active)); active = [] }
-                        })
-                    .accessibilityLabel("오늘의 손그림, 선택 항목").accessibilityIdentifier("reflection-ink")
-                }.frame(height: 130)
+                    .font(.caption).foregroundStyle(AppTheme.secondary)
             }
             Text(existing == nil ? "한 주에 주제별 카드 한 장을 만들어요. 번호는 기기에서 무작위로 생성되며, 다시 보거나 글을 고쳐도 유지됩니다." : "글과 색을 수정해도 기존 번호와 카드는 유지됩니다.")
-                .font(.caption).foregroundStyle(.secondary).lineSpacing(4)
+                .font(.caption).foregroundStyle(AppTheme.secondary).lineSpacing(4)
             Button {
                 guard !saving else { return }; saving = true
                 do {
@@ -278,7 +253,7 @@ private struct ReflectionArtwork: View {
                 .foregroundStyle(card.mood.color)
             Text(card.topic.title).font(.system(.title, design: .serif).bold())
             Text(card.dateText)
-                .font(.caption).foregroundStyle(.secondary)
+                .font(.caption).foregroundStyle(AppTheme.secondary)
             if includeBody { Text(card.text).font(.body).lineSpacing(6).fixedSize(horizontal: false, vertical: true).accessibilityIdentifier("reflection-body") }
             ZStack {
                 RoundedRectangle(cornerRadius: 24).fill(card.mood.color.opacity(0.07))
@@ -297,7 +272,7 @@ private struct ReflectionArtwork: View {
                         .animation(.spring(response: 0.45).delay(Double(index) * 0.09), value: revealed)
                 }
             }.accessibilityElement(children: .ignore).accessibilityLabel(card.numberText).accessibilityIdentifier("reflection-numbers")
-            Text("오락용 무작위 조합 · 당첨 확률을 높이지 않습니다.").font(.caption2).foregroundStyle(.secondary)
+            Text("오락용 무작위 조합 · 당첨 확률을 높이지 않습니다.").font(.caption2).foregroundStyle(AppTheme.secondary)
         }.padding(24).frame(maxWidth: .infinity, alignment: .leading)
             .background(.white, in: RoundedRectangle(cornerRadius: 28))
             .overlay(RoundedRectangle(cornerRadius: 28).stroke(card.mood.color.opacity(0.2)))
@@ -323,7 +298,7 @@ private struct ReflectionDetailView: View {
                 }.font(.subheadline).accessibilityIdentifier("reflection-replay")
                 Button { sharing = card } label: { Label("카드 공유", systemImage: "square.and.arrow.up").frame(maxWidth: .infinity).padding(12) }
                     .buttonStyle(.borderedProminent).tint(card.mood.color).accessibilityIdentifier("reflection-share")
-                Text("공유 미리보기에서 본문을 숨길 수 있어요. 기본값은 본문 숨김입니다.").font(.caption).foregroundStyle(.secondary)
+                Text("공유 미리보기에서 본문을 숨길 수 있어요. 기본값은 본문 숨김입니다.").font(.caption).foregroundStyle(AppTheme.secondary)
                 Button("이 카드 삭제", role: .destructive) { deleting = true }.font(.caption).padding(.top, 14)
             }.padding(20)
         }.background(reflectionPaper).navigationTitle("나의 한 장면").navigationBarTitleDisplayMode(.inline)
@@ -353,7 +328,7 @@ private struct ReflectionShareView: View {
             ScrollView {
                 VStack(spacing: 20) {
                     Toggle("기록 본문도 포함", isOn: $includeBody).accessibilityIdentifier("reflection-share-body")
-                    Text("손그림은 카드에 포함됩니다. 이름이나 사적인 내용을 그렸다면 공유 전 확인하세요.").font(.caption).foregroundStyle(.secondary)
+                    Text("손그림은 카드에 포함됩니다. 이름이나 사적인 내용을 그렸다면 공유 전 확인하세요.").font(.caption).foregroundStyle(AppTheme.secondary)
                     ReflectionArtwork(card: card, includeBody: includeBody).accessibilityIdentifier("reflection-share-preview")
                     if let image {
                         ShareLink(item: Image(uiImage: image), preview: SharePreview("이번 주의 여섯 장면", image: Image(uiImage: image))) {
@@ -376,20 +351,20 @@ struct ReflectionCollectionView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 22) {
                     Text("내가 남긴 시간들").font(.largeTitle.bold())
-                    Text("다섯 가지 질문에 남긴 이야기와 여섯 숫자.\n서두르지 않고 모아 가는 나만의 도감입니다.").font(.subheadline).foregroundStyle(.secondary)
+                    Text("다섯 가지 질문에 남긴 이야기와 여섯 숫자.\n서두르지 않고 모아 가는 나만의 도감입니다.").font(.subheadline).foregroundStyle(AppTheme.secondary)
                     if store.cards.isEmpty {
                         ContentUnavailableView("첫 장면을 기다리고 있어요", systemImage: "book.closed", description: Text("회고 탭에서 한 줄을 남겨보세요."))
                     }
                     ForEach(weeks, id: \.self) { week in
                         VStack(alignment: .leading, spacing: 12) {
-                            Text("\(week) 시작 주 · 한국 시간").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                            Text("\(week) 시작 주 · 한국 시간").font(.caption.weight(.semibold)).foregroundStyle(AppTheme.secondary)
                             ForEach(store.cards.filter { $0.weekID == week }) { card in
                                 NavigationLink { ReflectionDetailView(store: store, original: card) } label: {
                                     HStack(spacing: 14) {
                                         Image(systemName: card.topic.symbol).font(.title2).foregroundStyle(card.mood.color)
                                         VStack(alignment: .leading, spacing: 6) {
                                             Text(card.topic.title).font(.headline)
-                                            Text("\(card.mood.title) 마음 · \(card.numberText)").font(.caption).foregroundStyle(.secondary)
+                                            Text("\(card.mood.title) 마음 · \(card.numberText)").font(.caption).foregroundStyle(AppTheme.secondary)
                                         }
                                         Spacer(); Image(systemName: "chevron.right").font(.caption)
                                     }.padding(18).background(.white, in: RoundedRectangle(cornerRadius: 20))

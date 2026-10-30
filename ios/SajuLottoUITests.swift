@@ -7,131 +7,52 @@ final class SajuLottoUITests: XCTestCase {
         image.lifetime = .keepAlways
         add(image)
     }
-    func testOfflineAnalysisAndSavedNumbers() throws {
+    func testNativeAnalysisSavedNumbersAndConsent() throws {
         continueAfterFailure = false
         let app = XCUIApplication()
         app.launchArguments = ["-AppleLanguages", "(ko)", "-AppleLocale", "ko_KR"]
+        app.launchEnvironment["REFLECTION_TEST_STORE"] = UUID().uuidString
         app.launch()
         app.tabBars.buttons["분석"].tap()
-        XCTAssertTrue(app.webViews.firstMatch.waitForExistence(timeout: 15))
-        capture("01-시작화면")
-        let birth = app.webViews.textFields.matching(NSPredicate(format: "value CONTAINS %@", "19950512")).firstMatch
-        for _ in 0..<6 {
-            if birth.exists && birth.isHittable { break }
-            app.webViews.firstMatch.swipeUp()
-        }
-        XCTAssertTrue(birth.waitForExistence(timeout: 5), app.debugDescription)
-        birth.tap()
-        birth.typeText("19950512")
-        let generate = app.webViews.buttons.matching(NSPredicate(format: "label CONTAINS %@", "분석 및 번호 생성")).firstMatch
-        if !generate.isHittable { app.webViews.firstMatch.swipeUp() }
-        generate.tap()
-        let result = app.webViews.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "참고용 번호 5세트가 생성되었습니다")).firstMatch
-        XCTAssertTrue(result.waitForExistence(timeout: 45), app.debugDescription)
-        capture("02-번호조합")
-        app.buttons["번호 저장"].tap()
-        XCTAssertTrue(app.alerts["안내"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.alerts.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "저장했습니다")).firstMatch.exists)
-        app.alerts.buttons["확인"].tap()
-        app.tabBars.buttons["기록"].tap()
-        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "행운 요일:")).firstMatch.waitForExistence(timeout: 5))
-        capture("03-저장기록")
-        app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "행운 요일:")).firstMatch.tap()
-        XCTAssertTrue(app.buttons["번호 공유"].waitForExistence(timeout: 5))
-        capture("04-저장번호공유")
-        app.buttons["번호 공유"].tap()
-        capture("공유시트")
-        XCTAssertTrue(app.buttons["header.closeButton"].waitForExistence(timeout: 5))
-        app.buttons["header.closeButton"].tap()
-        app.tabBars.buttons["안내"].tap()
-        XCTAssertTrue(app.staticTexts["개인정보 처리 안내"].waitForExistence(timeout: 5), app.debugDescription)
-        capture("05-개인정보안내")
-        app.tabBars.buttons["분석"].tap()
-        app.buttons["AI 해석"].tap()
-        XCTAssertTrue(app.buttons["동의하고 AI 해석 요청"].waitForExistence(timeout: 5))
-        app.buttons["취소"].tap()
-        XCTAssertFalse(app.staticTexts["aiResultText"].exists)
-        app.buttons["AI 해석"].tap()
-        app.buttons["동의하고 AI 해석 요청"].tap()
-        let resultText = app.staticTexts["aiResultText"]
-        let ready = expectation(for: NSPredicate(format: "exists == true AND label.length > 0"), evaluatedWith: resultText)
-        wait(for: [ready], timeout: 100)
-        XCTAssertFalse(resultText.label.contains("실패") || resultText.label.contains("받지 못") || resultText.label.contains("먼저"), resultText.label)
-        capture("06-AI해석")
-
-
-    }
-
-    func testAIResultReopensWithoutRequest() throws {
-        continueAfterFailure = false
-        let app = XCUIApplication()
-        app.launchArguments = ["-AppleLanguages", "(ko)", "-AppleLocale", "ko_KR"]
-        app.launch()
-        app.tabBars.buttons["분석"].tap()
-        XCTAssertTrue(app.webViews.firstMatch.waitForExistence(timeout: 15))
-        capture("01-시작화면")
-        let birth = app.webViews.textFields.matching(NSPredicate(format: "value CONTAINS %@", "19950512")).firstMatch
-        for _ in 0..<6 {
-            if birth.exists && birth.isHittable { break }
-            app.webViews.firstMatch.swipeUp()
-        }
-        XCTAssertTrue(birth.waitForExistence(timeout: 5), app.debugDescription)
-        birth.tap()
-        birth.typeText("19950512")
-        let generate = app.webViews.buttons.matching(NSPredicate(format: "label CONTAINS %@", "분석 및 번호 생성")).firstMatch
-        if !generate.isHittable { app.webViews.firstMatch.swipeUp() }
-        generate.tap()
-        let result = app.webViews.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "참고용 번호 5세트가 생성되었습니다")).firstMatch
-        XCTAssertTrue(result.waitForExistence(timeout: 45), app.debugDescription)
-        app.buttons["AI 해석"].tap()
-        XCTAssertTrue(app.buttons["동의하고 AI 해석 요청"].waitForExistence(timeout: 5))
-        app.buttons["동의하고 AI 해석 요청"].tap()
-        let resultText = app.staticTexts["aiResultText"]
-        let ready = expectation(for: NSPredicate(format: "exists == true AND label.length > 0"), evaluatedWith: resultText)
-        wait(for: [ready], timeout: 100)
-        XCTAssertFalse(resultText.label.contains("실패") || resultText.label.contains("받지 못") || resultText.label.contains("먼저"), resultText.label)
-        capture("06-AI해석")
-        let previousResult = resultText.label
-        app.buttons["닫기"].tap()
-        app.buttons["AI 해석"].tap()
-        XCTAssertTrue(resultText.waitForExistence(timeout: 5))
-        XCTAssertFalse(app.buttons["동의하고 AI 해석 요청"].exists)
-        XCTAssertEqual(resultText.label, previousResult)
-        capture("07-AI해석재열기")
-    }
-
-    func testSavedInputsAndNumberBalls() throws {
-        continueAfterFailure = false
-        let app = XCUIApplication()
-        app.launchArguments = ["-AppleLanguages", "(ko)", "-AppleLocale", "ko_KR"]
-        app.launch()
-        app.tabBars.buttons["분석"].tap()
-        XCTAssertTrue(app.webViews.firstMatch.waitForExistence(timeout: 15))
-        capture("01-시작화면")
-        let birth = app.webViews.textFields.matching(NSPredicate(format: "value CONTAINS %@", "19950512")).firstMatch
-        for _ in 0..<6 {
-            if birth.exists && birth.isHittable { break }
-            app.webViews.firstMatch.swipeUp()
-        }
-        XCTAssertTrue(birth.waitForExistence(timeout: 5), app.debugDescription)
-        birth.tap()
-        birth.typeText("19950512")
-        let generate = app.webViews.buttons.matching(NSPredicate(format: "label CONTAINS %@", "분석 및 번호 생성")).firstMatch
-        if !generate.isHittable { app.webViews.firstMatch.swipeUp() }
-        generate.tap()
-        let result = app.webViews.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "참고용 번호 5세트가 생성되었습니다")).firstMatch
-        XCTAssertTrue(result.waitForExistence(timeout: 45), app.debugDescription)
-
-        app.buttons["번호 저장"].tap()
+        XCTAssertTrue(app.buttons["native-generate"].waitForExistence(timeout: 10))
+        XCTAssertEqual(app.webViews.count, 0)
+        capture("01-네이티브사주입력")
+        app.buttons["native-generate"].tap()
+        XCTAssertTrue(app.staticTexts["네 기둥"].waitForExistence(timeout: 10), app.debugDescription)
+        capture("02-네이티브원국")
+        let save = app.buttons["native-save"]
+        for _ in 0..<12 { if save.exists && save.isHittable { break }; app.swipeUp() }
+        XCTAssertTrue(save.exists)
+        save.tap()
         XCTAssertTrue(app.alerts["안내"].waitForExistence(timeout: 5))
         app.alerts.buttons["확인"].tap()
         app.tabBars.buttons["기록"].tap()
-        let record = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "행운 요일:")).firstMatch
+        let record = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "참고 요일:")).firstMatch
         XCTAssertTrue(record.waitForExistence(timeout: 5))
         record.tap()
-        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "생년월일 (양력): 1995")).firstMatch.waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "생년월일 (양력): 1995-05-12")).firstMatch.waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["조합 A"].exists)
-        capture("08-입력정보와원형번호")
+        capture("03-네이티브번호기록")
+        app.tabBars.buttons["분석"].tap()
+        app.buttons["AI 해석"].tap()
+        XCTAssertTrue(app.buttons["동의하고 AI 해석 요청"].waitForExistence(timeout: 5))
+        capture("05-AI정보전송동의")
+        app.buttons["ai-consent-cancel"].tap()
+        XCTAssertFalse(app.staticTexts["aiResultText"].exists)
+        app.buttons["새 분석"].tap()
+        XCTAssertTrue(app.buttons["native-generate"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["AI 해석"].isEnabled)
+    }
+
+    func testPrivacyPolicyAvailableOffline() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-AppleLanguages", "(ko)", "-AppleLocale", "ko_KR"]
+        app.launch()
+        app.tabBars.buttons["안내"].tap()
+        app.buttons["개인정보 처리방침"].tap()
+        XCTAssertTrue(app.staticTexts["기본 분석"].waitForExistence(timeout: 5))
+        XCTAssertEqual(app.webViews.count, 0)
+        capture("04-앱내개인정보처리방침")
     }
 
     private func scrollReflection(_ app: XCUIApplication) {
@@ -200,12 +121,14 @@ final class SajuLottoUITests: XCTestCase {
         app.launchArguments = ["-AppleLanguages", "(ko)", "-AppleLocale", "ko_KR"]
         app.launchEnvironment["REFLECTION_TEST_STORE"] = UUID().uuidString
         app.launch()
+        capture("00-한줄제목과회고홈")
         func record(_ topic: String, text: String) {
             let button = app.buttons["reflection-topic-" + topic]
             XCTAssertTrue(button.waitForExistence(timeout: 5))
-            for _ in 0..<6 { if button.isHittable { break }; scrollReflection(app) }
+            for _ in 0..<6 { if button.isHittable && button.frame.maxY < app.tabBars.firstMatch.frame.minY { break }; scrollReflection(app) }
             button.tap()
             let field = app.descendants(matching: .any).matching(identifier: "reflection-text").firstMatch
+            for _ in 0..<6 { if field.exists && field.isHittable { break }; scrollReflection(app) }
             XCTAssertTrue(field.waitForExistence(timeout: 5))
             for _ in 0..<4 { if field.isHittable { break }; scrollReflection(app) }
             field.tap(); field.typeText(text)
