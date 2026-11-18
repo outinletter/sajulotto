@@ -1,16 +1,32 @@
 # 천기누설 iOS
 
-iOS 17 이상, iPhone용 SwiftUI 앱입니다. `SajuLotto.xcodeproj`의 공유 스킴 `SajuLotto`로 빌드합니다.
+iOS 17 이상 iPhone용 SwiftUI 앱입니다. 공유 스킴 `SajuLotto`, 번들 ID `com.addvalue.sajulotto`, 개발 팀 `A7QB8PT33N`, 버전 1.0.0(18), 자동 서명을 사용합니다.
 
-번들 ID: `com.addvalue.sajulotto`, 개발 팀: `A7QB8PT33N`. 자동 서명을 사용합니다.
+## 사용자 흐름
+1. 출생 정보를 입력하면 한국 시간 일요일 00:00~토요일 19:35의 일곱 날짜 중 앱의 명리 비교 규칙상 점수가 가장 높은 날을 선정합니다. 동점이면 앞선 날짜입니다. 이미 지난 날도 주간 기준일로 유지합니다.
+2. 선정일을 표시하고 그날을 기준으로 다섯 질문을 제시합니다. 과거·오늘·미래 시제를 구분합니다. 이 단계에서 번호는 생성하지 않습니다.
+3. 세 답변 완료 후 선정일의 일주·오행·본인 원국과의 십성·일지 관계를 풀이합니다. ‘답변 수정’으로 돌아갈 수 있습니다.
+4. 마지막 ‘이날의 번호 5세트 만들기’에서만 조합을 생성하고 질문·답변·기준일·번호를 도감에 원자적으로 저장합니다. 조합은 기존 통합 분석과 동일한 결정적 규칙을 사용하며 답변 내용은 번호 계산에 사용하지 않습니다. 같은 출생 정보와 주간 기준이면 재현됩니다.
 
-분석 UI는 `NativeAnalysis.swift`의 SwiftUI Form이며 WKWebView를 사용하지 않습니다. `Web/vendor/`의 기존 절기 데이터와 순수 계산 함수를 JavaScriptCore에서 오프라인 실행합니다. `scripts/build-native-engine.cjs`로 웹의 공통 계산 함수를 추출해 `native-engine.js`를 갱신합니다. 웹 화면은 iOS 화면에 로드하지 않습니다. 한국 출생·양력 1900~2027년만 지원하며 시각 미상은 시주를 산출하지 않습니다. 주간 지표는 자체 오락용 비교 규칙입니다. 번호는 사주와 독립적인 SystemRandomNumberGenerator로 생성합니다. 기본 분석은 네트워크 연결 없이 기기에서 계산합니다. AI 해석은 새 요청마다 사용자의 동의를 받아 계산된 사주 정보만 HTTPS 프록시로 보냅니다. `Info.plist`의 `DeepSeekProxyURL`에 Cloudflare Worker 공개 주소를 설정하세요. API 키는 서버 환경변수에만 보관합니다. 직접 저장한 입력 정보와 번호는 UserDefaults에 보관하고 네이티브 공유 기능을 제공합니다.
+토요일 19:35부터는 새 생성이 중지됩니다. 저장한 결과는 계속 볼 수 있고, 일요일 00:00 이후 ‘새 분석’으로 새 주간을 시작합니다. 19:35는 추첨 약 1시간 전을 가정한 앱의 마감 기준이며 방송 일정에 자동 연동하지 않습니다. 당첨 확률을 높이거나 재정적 이익을 예측하지 않습니다.
 
-첫 화면은 ‘한 줄 회고’이며 ‘도감’에서 한국 시간 일요일 시작 주별 카드를 확인합니다. 주제를 누르면 카드 아래에 글·마음 색 입력창이 펼쳐지고, 완료하면 상단에 번호 한 세트씩 누적됩니다. 한 주에 주제별 한 장을 생성하고 수정·재열기로 번호를 바꾸지 않습니다. 번호는 SystemRandomNumberGenerator로 1~45 중 중복 없이 6개를 균등 추출합니다. 회고 본문·기존 손그림은 Application Support/Reflection/weekly-cards.json에 파일 보호·원자적 쓰기로 저장하며 AI 요청과 연결하지 않습니다. 공유 이미지는 본문 숨김이 기본값이며 손그림은 포함됩니다. 기존 사주 분석·번호 기록은 해당 탭에 보존합니다.
+## 구현과 개인정보
+`NativeAnalysis.swift`의 SwiftUI으로 구현하며 WKWebView를 사용하지 않습니다. 번들에 개별 포함한 절기 데이터와 순수 계산 함수를 JavaScriptCore에서 오프라인 실행합니다. `scripts/build-native-engine.cjs`로 `native-engine.js`를 갱신합니다. 한국 출생·양력 1900~2027년을 지원하며 시각 미상은 시주를 산출하지 않습니다. 기본 분석에는 네트워크가 필요하지 않습니다.
 
-모델 검증: `swiftc -parse-as-library ios/ReflectionModels.swift scripts/ReflectionModelChecks.swift -o /tmp/ReflectionModelChecks && /tmp/ReflectionModelChecks`. UI 검증: `testReflectionLifecycleAndPrivateSharing`. DEBUG UI 테스트는 UUID별 캐시 저장소를 사용해 실제 사용자의 회고를 수정하지 않습니다.
+질문·답변·기준일·기존 손그림과 번호는 Application Support/Reflection/weekly-cards.json에 파일 보호·원자적 쓰기로 저장합니다. 이전 형식의 카드도 읽습니다. 카드 상세에서 답변을 수정해도 번호와 기준일을 유지합니다. 공유는 본문 숨김이 기본값입니다. 출생 입력과 작성 중 답변·주간 분석 세션은 파일 보호된 로컬 파일에 자동 저장하고 앱 재실행 시 복원합니다. 주차·생년월일·시간·경도로 식별한 같은 사주의 주간 길일은 저장된 값을 재사용합니다. 이름 변경은 길일에 영향을 주지 않습니다. 안내 탭에 개인정보 처리방침·지원·명시적 확인을 거치는 데이터 초기화를 제공합니다.
 
+## 검증
+- `swiftc -parse-as-library ios/ReflectionModels.swift scripts/ReflectionModelChecks.swift -o /tmp/ReflectionModelChecks && /tmp/ReflectionModelChecks`
+- `swift scripts/NativeEngineChecks.swift`
+- `node scripts/test-saju-calendar.cjs` 및 `node scripts/test-unified-analysis.cjs`
+- UI 테스트: `testSelectedDayQuestionsReadingNumbersAndConfirmedReset`, `testPrivacyPolicyAvailableOffline`. UUID별 DEBUG 저장소를 사용해 실제 기록을 변경하지 않습니다.
 
-네이티브 계산 검증: `swift scripts/NativeEngineChecks.swift`. 입춘 경계, 시각 미상, 자정·경도 보정, 한국 시간 주간 구간, 오행 개수와 지원 연도를 검사합니다. 네이티브 UI 테스트는 `testNativeAnalysisSavedNumbersAndConsent`, `testPrivacyPolicyAvailableOffline`입니다. 네트워크 호출 없이 생성·저장·AI 동의 취소·새 분석·개인정보 화면을 검증합니다. DEBUG 테스트 저장소는 실사용 기록과 분리합니다.
+심사 준비 내용과 제출 전 확인 사항은 `APP_REVIEW.md`를 참고하세요. Xcode 경로는 실제 설치 위치에 맞게 `DEVELOPER_DIR`로 지정합니다.
 
-앱 심사 준비 내용과 제출 전 확인 사항은 `APP_REVIEW.md`를 참고하세요. 버전 1.0.0(10).
+화면은 아이보리·세이지 테마이며 번호는 오트·파우더 블루·블러시·라벤더·세이지의 무광 파스텔 5색을 사용합니다. 숫자 대비는 5.7:1 이상입니다. 첫 6개 공은 약 1.4초 안에 순차 공개하고, 동작 줄이기 설정에서는 짧은 페이드를 사용합니다.
+
+15번 빌드에서는 기본 Form·시스템 탭 바를 카드형 ScrollView와 17pt 헤더·56pt 하단 메뉴로 교체했습니다. 사용자 요청에 따라 실기기 UI 검증은 생략하고 빌드 후 설치합니다.
+
+17번: 중앙 34pt 제목·52pt 아이콘, 생년월일 8자리 직접 입력, 십이지 시간 구간 선택, 길일 고정 표시와 질문 하단 펼침, 한 줄 답변과 키보드 유지, 왼쪽 가장자리 뒤로 가기, 동일 크기의 조합별 파스텔 테마·A~E 순차 번호 공개를 적용했습니다. 하단 메뉴는 콘텐츠와 별도 세로 영역을 차지해 겹치지 않습니다. 절기 데이터는 실시간 API가 아닌 KASI 수집 내장 자료입니다.
+
+18번: 입력·작성 중 답변·현재 단계·주간 길일·번호를 보호된 로컬 파일에 즉시 저장합니다. 뒤로 가기·새 분석은 입력과 주간 캐시를 삭제하지 않고, 명시적인 앱 데이터 초기화만 이를 삭제합니다. 길일 찾기는 짧은 분석 애니메이션 후 같은 사주·같은 주차의 저장된 길일을 재사용하고 다섯 질문과 한 줄 답변칸을 모두 펼칩니다.

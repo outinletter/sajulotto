@@ -1,9 +1,87 @@
 import SwiftUI
 
+extension UIColor {
+    convenience init(hex: UInt32) {
+        self.init(red: CGFloat((hex >> 16) & 0xFF) / 255, green: CGFloat((hex >> 8) & 0xFF) / 255, blue: CGFloat(hex & 0xFF) / 255, alpha: 1)
+    }
+}
+
 enum AppTheme {
-    static let paper = Color(red: 0.97, green: 0.95, blue: 0.91)
-    static let accent = Color(red: 0.45, green: 0.31, blue: 0.20)
-    static let secondary = Color(red: 0.37, green: 0.34, blue: 0.30)
+    static func dynamic(_ light: UInt32, _ dark: UInt32) -> Color {
+        Color(UIColor { $0.userInterfaceStyle == .dark ? UIColor(hex: dark) : UIColor(hex: light) })
+    }
+    static let paper = LinearGradient(colors: [dynamic(0xF3F1EC, 0x17161B), dynamic(0xF3F1EC, 0x17161B)], startPoint: .top, endPoint: .bottom)
+    static let surface = dynamic(0xFBFAF7, 0x23222A)
+    static let accent = dynamic(0x25242B, 0xEDEAF2)
+    static let secondary = dynamic(0x74706A, 0xA9A6B4)
+    static let bronze = dynamic(0x8A7F6C, 0xC9BFA8)
+    static let ink = dynamic(0x25242B, 0xF3F1F7)
+    static let line = ink.opacity(0.08)
+    static let selection = accent.opacity(0.10)
+    static func editorial(_ style: Font.TextStyle) -> Font {
+        .system(style, design: .rounded).weight(.bold)
+    }
+    static func ball(_ number: Int, theme: Int? = nil) -> (background: Color, text: Color) {
+        let sample = theme.map { [15, 35, 45, 25, 5][(($0 % 5) + 5) % 5] } ?? number
+        switch sample {
+        case 1...10: return (Color(red: 241/255, green: 222/255, blue: 173/255), Color(red: 81/255, green: 69/255, blue: 44/255))
+        case 11...20: return (Color(red: 214/255, green: 228/255, blue: 239/255), Color(red: 61/255, green: 83/255, blue: 104/255))
+        case 21...30: return (Color(red: 234/255, green: 217/255, blue: 219/255), Color(red: 106/255, green: 74/255, blue: 80/255))
+        case 31...40: return (Color(red: 223/255, green: 221/255, blue: 237/255), Color(red: 80/255, green: 75/255, blue: 104/255))
+        default: return (Color(red: 220/255, green: 230/255, blue: 217/255), Color(red: 68/255, green: 91/255, blue: 73/255))
+        }
+    }
+}
+
+struct LottoNumberRow: View {
+    let numbers: [Int]
+    var compact = false
+    var animate = false
+    var theme: Int? = nil
+    var revealedCount: Int? = nil
+    private var visibleCount: Int { revealedCount ?? (animate ? visible : numbers.count) }
+    private var showingAnimation: Bool { animate || revealedCount != nil }
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var visible = 0
+    var body: some View {
+        ViewThatFits(in: .horizontal) {
+            balls(size: compact ? 32 : 44, spacing: compact ? 5 : 8)
+            balls(size: compact ? 28 : 36, spacing: 4)
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(numbers.map(String.init).joined(separator: " · "))
+        .accessibilityValue(showingAnimation && visibleCount < numbers.count ? "번호 공개 중" : "번호 공개 완료")
+        .task(id: numbers) {
+            guard revealedCount == nil else { return }
+            guard animate else { visible = numbers.count; return }
+            visible = 0
+            if reduceMotion {
+                withAnimation(.easeOut(duration: 0.15)) { visible = numbers.count }
+                return
+            }
+            for index in numbers.indices {
+                do { try await Task.sleep(for: .milliseconds(180)) } catch { return }
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) { visible = index + 1 }
+            }
+            if !Task.isCancelled { UIImpactFeedbackGenerator(style: .light).impactOccurred() }
+        }
+    }
+    private func balls(size: CGFloat, spacing: CGFloat) -> some View {
+        HStack(spacing: spacing) {
+            ForEach(Array(numbers.enumerated()), id: \.offset) { index, number in
+                let palette = AppTheme.ball(number, theme: theme)
+                ZStack {
+                    Circle().stroke(AppTheme.accent.opacity(0.12), lineWidth: 1)
+                    Text(String(number)).font(.system(size: size * 0.42, weight: .semibold, design: .rounded)).monospacedDigit()
+                        .foregroundStyle(palette.text).frame(width: size, height: size)
+                        .background(palette.background, in: Circle())
+                        .opacity(!showingAnimation || index < visibleCount ? 1 : 0)
+                        .scaleEffect(!showingAnimation || index < visibleCount || reduceMotion ? 1 : 0.88)
+                        .offset(y: !showingAnimation || index < visibleCount || reduceMotion ? 0 : 6)
+                }.frame(width: size, height: size)
+            }
+        }
+    }
 }
 
 struct SavedReport: Codable, Identifiable {
@@ -11,317 +89,207 @@ struct SavedReport: Codable, Identifiable {
     let created: Date
     let text: String
     var inputInfo: String? = nil
+
+    var referenceDate: String? {
+        guard text.hasPrefix("기준일: ") else { return nil }
+        let date = String(text.dropFirst("기준일: ".count).prefix(10))
+        return WeeklyWindow.date(from: date) == nil ? nil : date
+    }
+
+    var numberSets: [[Int]] {
+        text.split(separator: "\n").compactMap { line in
+            guard line.hasPrefix("조합 "), let colon = line.firstIndex(of: ":") else { return nil }
+            return line[line.index(after: colon)...].split(separator: ",")
+                .compactMap { Int($0.trimmingCharacters(in: .whitespaces)) }
+        }
+    }
 }
 
 final class ReportStore: ObservableObject {
     @Published var reports: [SavedReport] = []
     private let defaults: UserDefaults
-    init() {
+    init(defaults: UserDefaults? = nil) {
+        var selected = defaults ?? .standard
         #if DEBUG
-        if let raw = ProcessInfo.processInfo.environment["REFLECTION_TEST_STORE"], let id = UUID(uuidString: raw) {
-            defaults = UserDefaults(suiteName: "SajuLottoTests." + id.uuidString)!
-        } else { defaults = .standard }
-        #else
-        defaults = .standard
+        if defaults == nil, let raw = ProcessInfo.processInfo.environment["REFLECTION_TEST_STORE"], let id = UUID(uuidString: raw),
+           let isolated = UserDefaults(suiteName: "SajuLottoTests." + id.uuidString) { selected = isolated }
         #endif
-        if let data = defaults.data(forKey: "savedReports"),
+        self.defaults = selected
+        if let data = selected.data(forKey: "savedReports"),
            let saved = try? JSONDecoder().decode([SavedReport].self, from: data) { reports = saved }
     }
     func save(_ text: String, inputInfo: String? = nil) {
+        guard !reports.contains(where: { $0.text == text && $0.inputInfo == inputInfo }) else { return }
         reports.insert(SavedReport(created: Date(), text: text, inputInfo: inputInfo), at: 0)
         persist()
     }
-    func delete(_ offsets: IndexSet) { reports.remove(atOffsets: offsets); persist() }
+    func reset() { defaults.removeObject(forKey: "savedReports"); reports = [] }
+    func delete(_ report: SavedReport) { reports.removeAll { $0.id == report.id }; persist() }
+    func deleteReferenceDate(_ date: String) { reports.removeAll { $0.referenceDate == date }; persist() }
     func persist() {
         if let data = try? JSONEncoder().encode(reports) { defaults.set(data, forKey: "savedReports") }
     }
 }
 
-@MainActor final class AnalysisViewModel: ObservableObject {
-    @Published var chart: NativeChart?
-    @Published var analysisID = UUID()
-    @Published var numberSets: [[Int]] = []
-    private var savedInput = ""
-    var numberText: String {
-        var lines = ["참고 요일: " + (chart?.bestDay ?? ""), ""]
-        for (index, numbers) in numberSets.enumerated() {
-            let label = String(UnicodeScalar(65 + index)!)
-            let values = numbers.map { String($0) }.joined(separator: ", ")
-            lines.append("조합 \(label): \(values)")
-        }
-        return lines.joined(separator: "\n")
-    }
-    func calculate(birth: Date, time: Date?, longitude: Double, name: String, city: String) {
-        do {
-            let result = try NativeCalendarEngine.calculate(birth: birth, time: time, longitude: longitude)
-            cancelAI()
-            chart = result
-            var generator = SystemRandomNumberGenerator()
-            numberSets = (0..<5).map { _ in Array((1...45).shuffled(using: &generator).prefix(6)).sorted() }
-            let formatter = DateFormatter(); formatter.locale = Locale(identifier: "en_US_POSIX"); formatter.calendar = Calendar(identifier: .gregorian); formatter.timeZone = TimeZone(secondsFromGMT: 9 * 3600); formatter.dateFormat = "yyyy-MM-dd"
-            savedInput = "이름: " + (name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "익명" : String(name.prefix(100))) + "\n생년월일 (양력): " + formatter.string(from: birth)
-            formatter.dateFormat = "HH:mm"
-            savedInput += "\n출생 시간: " + (time.map { formatter.string(from: $0) } ?? "미상") + "\n출생 지역: " + city
-        } catch { message = error.localizedDescription; showMessage = true }
-    }
-    func reset() { cancelAI(); chart = nil; numberSets = []; savedInput = ""; analysisID = UUID() }
-    func saveNative(to store: ReportStore) {
-        guard chart != nil, numberSets.count == 5 else { return }
-        store.save(numberText, inputInfo: savedInput)
-        message = "입력 정보와 번호 조합을 기기에 저장했습니다. 기록 탭에서 공유하거나 삭제할 수 있습니다."
-        showMessage = true
-    }
-    @Published var message = ""
-    @Published var showMessage = false
-    @Published var showAIConsent = false
-    @Published var showAIResult = false
-    @Published var aiText = ""
-    @Published var aiLoading = false
-    private var aiTask: Task<Void, Never>?
-    private var cachedDetails: String?
-    private var cachedText = ""
-    private var requestID = UUID()
-    private var pendingAIRequest = false
-    func approveAI() { pendingAIRequest = true; showAIConsent = false }
-    func startApprovedAI() {
-        guard pendingAIRequest else { return }
-        pendingAIRequest = false
-        requestAI()
-    }
-    private func analysisDetails() async throws -> String? {
-        guard let chart else { return nil }
-        return chart.aiDetails + "\nnumberSets: " + String(data: try JSONEncoder().encode(numberSets), encoding: .utf8)!
-    }
-    func openAI() {
-        Task {
-            do {
-                let details = try await analysisDetails()
-                guard details != nil else {
-                    message = "먼저 사주 분석을 완료해주세요."; showMessage = true; return
-                }
-                if let details, details == cachedDetails, !cachedText.isEmpty {
-                    aiText = cachedText; showAIResult = true
-                } else if aiLoading {
-                    showAIResult = true
-                } else {
-                    showAIConsent = true
-                }
-            } catch {
-                message = "분석 화면을 확인하고 다시 시도해주세요."; showMessage = true
-            }
-        }
-    }
-    func requestAI() {
-        guard !aiLoading else { return }
-        guard let value = Bundle.main.object(forInfoDictionaryKey: "DeepSeekProxyURL") as? String,
-              let url = URL(string: value), url.scheme == "https", url.host != nil else {
-            message = "AI 서버 주소가 설정되지 않았습니다."; showMessage = true; return
-        }
-        let id = UUID(); requestID = id
-        aiText = ""; aiLoading = true; showAIResult = true
-        aiTask = Task { [weak self] in
-            guard let self else { return }
-            defer { if self.requestID == id { self.aiLoading = false } }
-            do {
-                let details = try await self.analysisDetails()
-                try Task.checkCancellation()
-                guard let details else {
-                    self.aiText = "먼저 사주 분석을 완료해주세요."; return
-                }
-                let prompt = """
-                당신은 한국 전통 명리학을 근거와 한계까지 설명하는 해설자입니다. 전달된 원국·십성·지장간·계산 근거만 사용해 한국어 Markdown으로 2,000~2,600자의 원국 해설을 작성하세요. 천문 날짜의 정확성이 사주 예측의 과학적 타당성을 보장하지 않음을 구분하세요. 한국천문연구원이 사주 해석을 제공하거나 보증한다고 쓰지 마세요.
-                연주는 입춘, 월주는 12절입 기준이며 음력 월건을 대신 적용하지 마세요. 계산 근거의 출처·입력 정밀도·시간 보정·경계 경고를 먼저 설명하세요. 시각 미상이면 시주를 해석하지 말고 연주·월주의 경계 불확실성을 유지하세요. 오행 표면 개수와 월령·지장간은 구분하세요. 미산출 격국·용신·신강신약·대운 시작 나이·대운·세운은 추정하거나 확정하지 마세요. 합충형파해는 입력에 있는 관계만 설명하며, 입력에 없는 운명·사건·수명·질병·혼인·재정적 이익을 예측하지 마세요.
-                # 사주 원국 해설
-                ## 계산 출처와 해석 범위
-                ## 일간과 월령의 계절적 배경
-                ## 천간 십성과 지장간
-                ## 오행 분포와 균형을 읽는 방법
-                ## 일·관계·휴식의 자기성찰 제안
-                ## 이번 주 참고 흐름과 번호
-                주간 점수는 앱의 오락용 자체 비교 지표이며 확률이나 공인 지수가 아닙니다. 선택된 요일을 임의 변경하지 말고, 입력에 없는 시간대를 만들어 추천하지 마세요. 전달된 numberSets 5세트는 별도 글머리표로 그대로 표시하고 어떤 조합도 당첨 확률을 높이지 않는다고 설명하세요. 토요일 시간 언급은 19:35(KST) 이전으로 제한하세요.
-                문단은 2문장 이내로 나누고 빈 줄을 넣으세요. 제목과 목록은 각각 별도 줄로 작성하세요. 표·코드 블록·내부 변수명은 쓰지 마세요. 굵은 글씨는 문단당 핵심 구절 한 곳에만 사용하세요. 용어는 쉬운 풀이를 붙이고 계산 사실 → 전통적 해석 → 생활 예시를 구분하세요. 마지막에 오락과 자기성찰용이며 중요한 의사결정의 근거로 사용하지 말라는 안내를 포함하세요.
 
-                계산 결과:
-                """ + details
-                var request = URLRequest(url: url)
-                request.httpMethod = "POST"; request.timeoutInterval = 90
-                request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-                request.httpBody = try JSONSerialization.data(withJSONObject: ["prompt": prompt])
-                let session = URLSession(configuration: .ephemeral)
-                defer { session.invalidateAndCancel() }
-                let (data, response) = try await session.data(for: request)
-                try Task.checkCancellation()
-                guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode),
-                      let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-                      let choices = json["choices"] as? [[String: Any]],
-                      let message = choices.first?["message"] as? [String: Any],
-                      let text = message["content"] as? String, !text.isEmpty else {
-                    self.aiText = "AI 서버 응답을 받지 못했습니다. 잠시 후 다시 시도해주세요."; return
-                }
-                guard choices.first?["finish_reason"] as? String != "length" else {
-                    self.aiText = "AI 응답이 길이 제한으로 중단되었습니다. 잠시 후 다시 시도해주세요."; return
-                }
-                self.cachedDetails = details
-                self.cachedText = text
-                self.aiText = text
-            } catch is CancellationError {
-                if self.requestID == id { self.aiText = "" }
-            } catch {
-                if !Task.isCancelled { self.aiText = "AI 연결에 실패했습니다. 인터넷 연결을 확인하고 다시 시도해주세요." }
-            }
-        }
-    }
-    func cancelAI() {
-        requestID = UUID(); aiTask?.cancel(); aiTask = nil; pendingAIRequest = false
-        aiLoading = false; aiText = ""; cachedDetails = nil; cachedText = ""
+private struct AppTabVisibility: ViewModifier {
+    let isVisible: Bool
+    func body(content: Content) -> some View {
+        content.opacity(isVisible ? 1 : 0).allowsHitTesting(isVisible)
+            .accessibilityHidden(!isVisible).zIndex(isVisible ? 1 : 0)
     }
 }
 
 @main struct SajuLottoApp: App {
     @StateObject private var reflections = ReflectionStore()
     @StateObject private var store = ReportStore()
-    @StateObject private var analysis = AnalysisViewModel()
+    @State private var confirmReset = false
+    @State private var resetError: String?
+    @State private var resetID = UUID()
+    @State private var selectedTab = 0
+    @State private var recordsMode = 0
+    @AppStorage("onboardingDone") private var onboardingDone = false
+    @AppStorage("weeklyReminders") private var reminders = false
+    @State private var collectionDate: String?
+    @State private var collectionID = UUID()
+    @State private var keyboardVisible = false
+    private func openCollection(_ date: String) {
+        collectionDate = date
+        collectionID = UUID()
+        recordsMode = 1
+        selectedTab = 2
+    }
+    private func resetApp() {
+        do {
+            try reflections.reset()
+            store.reset()
+            try AnalysisDraftStore().reset()
+            for key in [WeeklyReflection.storageKey, WeeklyReflection.birthDateKey, WeeklyReflection.themeKey, SajuProfile.hourKey, SajuProfile.extraKey, "sajuWeeklyNumbers", "sajuDecisionHistory", "onboardingDone", "weeklyReminders"] {
+                UserDefaults.standard.removeObject(forKey: key)
+            }
+            Task { _ = await WeeklyReminder.set(false) }
+            selectedTab = 0; recordsMode = 0; collectionDate = nil; resetID = UUID()
+        } catch { resetError = "초기화하지 못했습니다. 잠시 후 다시 시도해주세요." }
+    }
+    private var bottomBar: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 0) {
+                tabButton(0, title: "선택", symbol: "wand.and.stars")
+                tabButton(1, title: "이번 주", symbol: "calendar")
+                tabButton(2, title: "기록", symbol: "book.pages")
+                tabButton(3, title: "설정", symbol: "gearshape")
+            }.padding(.horizontal, 12).padding(.vertical, 4)
+                .appGlass(Capsule())
+                .padding(.horizontal, 16).padding(.bottom, 4)
+        }
+    }
+    private func tabButton(_ index: Int, title: String, symbol: String) -> some View {
+        Button { selectedTab = index } label: {
+            VStack(spacing: 4) {
+                Image(systemName: symbol).font(.body.weight(selectedTab == index ? .semibold : .regular))
+                    .frame(minWidth: 48, minHeight: 29)
+                    .foregroundStyle(selectedTab == index ? tone.beadInk : AppTheme.secondary)
+                    .background(selectedTab == index ? tone.bead : Color.clear, in: Capsule())
+                Text(title).font(.caption.weight(selectedTab == index ? .semibold : .regular))
+            }.frame(maxWidth: .infinity, minHeight: 52).contentShape(Rectangle())
+        }.buttonStyle(.plain).foregroundStyle(selectedTab == index ? AppTheme.ink : AppTheme.secondary)
+            .accessibilityLabel(title).accessibilityIdentifier("app-tab-\(index)").accessibilityAddTraits(selectedTab == index ? .isSelected : [])
+    }
+
+    private var settings: some View {
+        NavigationStack {
+            List {
+                VStack(alignment: .leading, spacing: 6) {
+                    ToneChip(text: "이번 주의 선택 · 설정")
+                    Text("설정").font(.system(size: 32, weight: .bold, design: .rounded)).foregroundStyle(AppTheme.ink)
+                }.listRowBackground(Color.clear).listRowSeparator(.hidden)
+                Section("내 사주 정보") {
+                    NavigationLink {
+                        ScrollView { SajuProfileCard().padding(20) }
+                            .background(AppTheme.paper).navigationTitle("내 사주 정보")
+                    } label: {
+                        Label("생년월일·시각·성별·출생지", systemImage: "person.text.rectangle")
+                    }
+                    NavigationLink { SajuDetailView() } label: { Label("내 사주 자세히 보기", systemImage: "scroll") }
+                }
+                Section("알림") {
+                    Toggle("주간 알림", isOn: Binding(get: { reminders }, set: { on in
+                        Task { let ok = await WeeklyReminder.set(on); reminders = on && ok }
+                    })).tint(Element.wood.color).accessibilityIdentifier("weekly-reminders")
+                    Text("일요일 오전 9시에 번호 생성 알림, 토요일 오후 4시 35분에 마감 3시간 전 알림을 보내요.")
+                        .font(.subheadline).foregroundStyle(AppTheme.secondary)
+                }
+                Section("이용 안내") {
+                    Text("선택: 선택지 2~3개를 넣으면 오늘의 기운과 내 사주로 오행 일치도를 재서 하나를 골라요.")
+                    Text("이번 주: 한 주의 좋은 날을 보고, 덤으로 오락용 번호를 한 번 만들어 볼 수 있어요. 당첨을 예측하거나 확률을 높이지 않아요.")
+                }
+                Section("회고와 주간 도감") {
+                    Text("회고 탭에서 날짜를 골라 한 가지 질문에만 답해도 도감에 저장할 수 있습니다.")
+                    Text("한 주는 한국 시간 일요일에 시작합니다. 주간 마무리에 저장한 작은 행동은 다음 주 첫 화면에서 다시 볼 수 있습니다.")
+                }
+                Section("개인정보와 지원") {
+                    NavigationLink("개인정보 처리방침") { PrivacyPolicyView() }
+                    Link("지원·문의", destination: PrivacyPolicyView.webURL)
+                    Text("문의할 때 생년월일 같은 개인정보는 보내지 않아도 돼요.")
+                        .font(.subheadline).foregroundStyle(AppTheme.secondary)
+                }
+                Section("데이터 관리") {
+                    Button("앱 데이터 초기화", role: .destructive) { confirmReset = true }.accessibilityIdentifier("app-reset")
+                    Text("회고, 주간 마무리, 생년월일 및 이전 버전의 저장 데이터를 삭제합니다.")
+                        .font(.footnote).foregroundStyle(AppTheme.secondary)
+                }
+            }.listStyle(.insetGrouped).scrollContentBackground(.hidden).contentMargins(.bottom, 90)
+                .background(AppTheme.paper.ignoresSafeArea()).toolbar(.hidden, for: .navigationBar)
+        }
+    }
+
+    private var records: some View {
+        VStack(spacing: 0) {
+            Picker("기록", selection: $recordsMode) { Text("회고").tag(0); Text("도감").tag(1) }
+                .pickerStyle(.segmented).padding(.horizontal, 20).padding(.top, 8)
+            ZStack {
+                ReflectionHomeView(store: reflections, openCollection: openCollection)
+                    .modifier(AppTabVisibility(isVisible: recordsMode == 0))
+                ReflectionCollectionView(store: reflections, reports: store, targetDate: collectionDate)
+                    .id(collectionID)
+                    .modifier(AppTabVisibility(isVisible: recordsMode == 1))
+            }
+        }
+    }
+
+    private var tone: Element { SajuEngine.dayPillar(Date()).stemElement }
+
+    private func openRecords() { recordsMode = 0; selectedTab = 2 }
+
     var body: some Scene {
         WindowGroup {
-            TabView {
-                ReflectionHomeView(store: reflections).tabItem { Label("회고", systemImage: "pencil.and.outline") }
-                ReflectionCollectionView(store: reflections).tabItem { Label("도감", systemImage: "book.closed") }
-                NavigationStack {
-                    NativeAnalysisView(model: analysis, store: store)
-                        .id(analysis.analysisID)
-                        .navigationTitle("사주 돌아보기")
-                        .navigationBarTitleDisplayMode(.inline)
-                        .toolbar {
-                            ToolbarItem(placement: .topBarLeading) {
-                                Button("새 분석", systemImage: "arrow.clockwise") { analysis.reset() }
-                            }
-                            ToolbarItemGroup(placement: .topBarTrailing) {
-                                Button("AI 해석", systemImage: "sparkles") { analysis.openAI() }.disabled(analysis.chart == nil)
-
-                            }
-                        }
-                        .alert("안내", isPresented: $analysis.showMessage) { Button("확인", role: .cancel) {} } message: { Text(analysis.message) }
-                        .sheet(isPresented: $analysis.showAIConsent, onDismiss: { analysis.startApprovedAI() }) {
-                            AIConsentView(model: analysis)
-                        }
-                        .sheet(isPresented: $analysis.showAIResult) {
-                            NavigationStack {
-                                ScrollView {
-                                    VStack(alignment: .leading, spacing: 20) {
-                                        Text("AI 생성 해석은 오류가 있을 수 있으며 당첨이나 재정적 이익을 예측하지 않습니다.").font(.footnote).foregroundStyle(AppTheme.secondary)
-                                        if analysis.aiLoading { ProgressView("AI 해석을 요청하고 있습니다…") }
-                                        AIArticleView(markdown: analysis.aiText).accessibilityElement(children: .combine).accessibilityIdentifier("aiResultText")
-                                        Link("AI 제공업체 개인정보 처리방침", destination: URL(string: "https://cdn.deepseek.com/policies/en-US/deepseek-privacy-policy.html")!)
-                                        Link("Cloudflare 개인정보 처리방침", destination: URL(string: "https://www.cloudflare.com/privacypolicy/")!)
-                                    }.padding(.horizontal, 24).padding(.vertical, 28)
-                                }.background(AppTheme.paper).navigationTitle("AI 해석").navigationBarTitleDisplayMode(.inline).toolbar {
-                                    Button("닫기") { analysis.showAIResult = false }
-                                }
-                            }
-                        }
-                }.tabItem { Label("분석", systemImage: "sparkles") }
-                NavigationStack {
-                    List {
-                        if store.reports.isEmpty { Text("분석 후 ‘번호 저장’을 누르면 이곳에서 번호를 확인할 수 있습니다.").foregroundStyle(AppTheme.secondary) }
-                        ForEach(store.reports) { report in
-                            NavigationLink {
-                                ScrollView {
-                                    VStack(alignment: .leading, spacing: 24) {
-                                        Text(report.created, format: .dateTime.year().month().day())
-                                        if let inputInfo = report.inputInfo {
-                                            Text(inputInfo).font(.subheadline).textSelection(.enabled)
-                                        }
-                                        SavedNumberView(text: report.text)
-                                        Text("오락용 번호이며 당첨을 예측하거나 당첨 확률을 높이지 않습니다.").font(.footnote).foregroundStyle(AppTheme.secondary)
-                                        ShareLink(item: report.text + "\n\n오락용 번호입니다. 당첨을 보장하지 않습니다.") { Label("번호 공유", systemImage: "square.and.arrow.up") }
-                                    }.padding()
-                                }.navigationTitle("저장한 번호")
-                            } label: {
-                                VStack(alignment: .leading) {
-                                    Text(report.created, format: .dateTime.year().month().day().hour().minute())
-                                    Text(report.text.components(separatedBy: "\n").first ?? "번호 조합").font(.caption).foregroundStyle(AppTheme.secondary)
-                                }
-                            }
-                        }.onDelete(perform: store.delete)
-                    }.scrollContentBackground(.hidden).background(AppTheme.paper).navigationTitle("나의 기록").navigationBarTitleDisplayMode(.inline).toolbar { EditButton() }
-                }.tabItem { Label("기록", systemImage: "bookmark") }
-                NavigationStack {
-                    List {
-                        Section("개인정보와 지원") {
-                            NavigationLink("개인정보 처리방침") { PrivacyPolicyView() }
-                            Link("개발자 문의", destination: URL(string: "https://github.com/outinletter/sajulotto/issues")!)
-                            Text("문의 공개 게시물에는 이름·생년월일 등 개인정보를 올리지 마세요.").font(.footnote).foregroundStyle(AppTheme.secondary)
-                            Button("AI 요청 취소 및 임시 결과 삭제") { analysis.cancelAI() }
-                        }
-                        Section("한 줄 회고와 주간 도감") {
-                            Text("다섯 가지 주제 중 하나에 마음 색과 한 줄을 남기면 번호 카드가 완성됩니다. 한 주에 주제별 한 장을 만들고, 다시 열거나 수정해도 번호는 유지됩니다. 번호는 기기에서 1~45 중 중복 없이 6개를 무작위로 선택하며 기록 내용과 감정은 당첨 확률에 영향을 주지 않습니다.")
-                            Text("회고 본문과 손그림은 기기에만 저장하며 AI 서버에 보내지 않습니다. 기기 백업에 포함될 수 있습니다. 공유 미리보기에서는 본문을 기본적으로 숨기며 손그림은 포함되므로 사적인 표시가 없는지 확인하세요. 카드 상세에서 수정·삭제할 수 있습니다.")
-                        }
-                        Section("서비스 안내") {
-                            Text("천기누설은 오락용 사주 해석 및 번호 생성 앱입니다. 복권 구매·판매·베팅 기능이 없으며 당첨이나 재정적 이익을 예측하지 않습니다.")
-                            Text("양력만 지원합니다. 절기는 검증된 한국천문연구원 API 자료 또는 천문 계산값을 사용합니다. 원국 계산 근거에서 출처와 시간대·경계 한계를 확인하세요. 중요한 의사결정의 근거로 사용하지 마세요.")
-                        }
-                        Section("개인정보 처리 안내") {
-                            Text("기본 사주 분석과 번호 생성은 기기 안에서 계산합니다. 입력 정보는 번호 저장을 누를 때만 번호와 함께 기기에 보관합니다. AI 해석 요청 시에만 별도 동의를 받아 계산된 사주팔자·오행·주간 비교·번호 조합·십성·지장간·절기 이름·계산 방식·불확실성 경고를 Cloudflare와 DeepSeek에 전송합니다. 이름·생년월일 원문·정확한 시각·지역·경도값은 전송하지 않습니다. 연결 IP와 전송 정보의 처리·보관은 각 서비스 정책을 따릅니다.")
-                            Text("직접 저장한 입력 정보, 행운 요일과 번호는 기기에 보관되며 운영체제의 기기 백업에 포함될 수 있습니다. 기록에서 삭제할 수 있습니다.")
-                            Text("공유 버튼을 사용하면 선택한 앱에 번호가 전달됩니다. 광고와 추적 SDK는 사용하지 않습니다. AI 해석에는 인터넷 연결과 AI 분석 API를 사용합니다. AI 결과는 앱 실행 중 메모리에만 유지하며 새 분석 또는 앱 종료 시 삭제합니다.")
-                        }
-                        Section("오픈소스 고지") {
-                            Text("Chart.js 4.4.8 · Tailwind CSS — MIT License. 과거 절기 보완 데이터는 Astronomy Engine 2.1.19(MIT)로 산출했습니다. 전체 라이선스는 앱 번들에 포함되어 있습니다.")
-                        }
-                    }.scrollContentBackground(.hidden).background(AppTheme.paper).navigationTitle("안내").navigationBarTitleDisplayMode(.inline)
-                }.tabItem { Label("안내", systemImage: "info.circle") }
-            }.tint(AppTheme.accent)
+            VStack(spacing: 0) {
+            ZStack {
+                WeeklyNumberView().modifier(AppTabVisibility(isVisible: selectedTab == 1))
+                DecisionView(openReflection: openRecords).modifier(AppTabVisibility(isVisible: selectedTab == 0))
+                records.modifier(AppTabVisibility(isVisible: selectedTab == 2))
+                settings.modifier(AppTabVisibility(isVisible: selectedTab == 3))
+            }.id(resetID).frame(maxWidth: .infinity, maxHeight: .infinity)
+            if !keyboardVisible { bottomBar }
+            }.tint(AppTheme.accent).background(AppTheme.paper)
+                .fullScreenCover(isPresented: Binding(get: { !onboardingDone }, set: { _ in })) {
+                    OnboardingView { onboardingDone = true }
+                }
+                .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in keyboardVisible = true }
+                .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in keyboardVisible = false }
+                .alert("앱 데이터를 모두 초기화할까요?", isPresented: $confirmReset) {
+                    Button("모든 데이터 삭제", role: .destructive) { resetApp() }
+                    Button("취소", role: .cancel) {}
+                } message: { Text("이 기기의 회고, 주간 마무리, 생년월일과 이전 기록이 삭제됩니다. 되돌릴 수 없습니다.") }
+                .alert("초기화 안내", isPresented: Binding(get: { resetError != nil }, set: { if !$0 { resetError = nil } })) {
+                    Button("확인") { resetError = nil }
+                } message: { Text(resetError ?? "") }
         }
     }
 }
 
 // Render blocks separately: a single AttributedString loses Markdown paragraph layout.
-private struct AIArticleView: View {
-    let markdown: String
-    private var blocks: [String] {
-        markdown.replacingOccurrences(of: "\r\n", with: "\n")
-            .replacingOccurrences(of: #"(?m)^[ \t]*#{1,6}[ \t]+(.+)$"#, with: "\n## $1\n", options: .regularExpression)
-            .replacingOccurrences(of: #"(?m)^[ \t]*[-*_]{3,}[ \t]*$"#, with: "\n", options: .regularExpression)
-            .components(separatedBy: "\n")
-            .flatMap { line -> [String] in
-                let line = line.trimmingCharacters(in: .whitespaces)
-                guard !line.hasPrefix("#"), !line.hasPrefix("- "), !line.hasPrefix("* "), line.count > 180 else { return [line] }
-                return line.replacingOccurrences(of: #"([.!?。])\s+"#, with: "$1\n", options: .regularExpression)
-                    .components(separatedBy: "\n")
-            }
-            .filter { !$0.isEmpty }
-    }
-    private func inline(_ text: String) -> AttributedString {
-        (try? AttributedString(markdown: text, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace))) ?? AttributedString(text)
-    }
-    var body: some View {
-        VStack(alignment: .leading, spacing: 22) {
-            ForEach(Array(blocks.enumerated()), id: \.offset) { _, block in
-                if block.hasPrefix("# ") || block.hasPrefix("## ") || block.hasPrefix("### ") {
-                    Text(inline(String(block.drop(while: { $0 == "#" || $0 == " " }))))
-                        .font(.title3.bold()).foregroundStyle(Color.primary)
-                        .padding(.top, 14).fixedSize(horizontal: false, vertical: true)
-                        .accessibilityAddTraits(.isHeader)
-                } else if block.hasPrefix("- ") || block.hasPrefix("* ") {
-                    HStack(alignment: .top, spacing: 12) {
-                        Text("•").foregroundStyle(AppTheme.secondary)
-                        Text(inline(String(block.dropFirst(2)))).fixedSize(horizontal: false, vertical: true)
-                    }
-                    .padding(14).frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))
-                } else {
-                    Text(inline(block)).fixedSize(horizontal: false, vertical: true)
-                }
-            }
-        }
-        .font(.body).lineSpacing(8)
-        .frame(maxWidth: 640, alignment: .leading).frame(maxWidth: .infinity)
-        .textSelection(.enabled)
-    }
-}
-
-private struct SavedNumberView: View {
+struct SavedNumberView: View {
     let text: String
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -341,19 +309,8 @@ private struct SavedNumberView: View {
         }
     }
     private func balls(_ line: String, after colon: String.Index, size: CGFloat) -> some View {
-        HStack(spacing: 6) {
-            ForEach(Array(line[line.index(after: colon)...].split(separator: ",").enumerated()), id: \.offset) { _, number in
-                Text(String(number).trimmingCharacters(in: .whitespaces))
-                    .font(.system(size: size * 0.4, weight: .black, design: .serif))
-                    .foregroundStyle(Color(red: 0.18, green: 0.15, blue: 0.14))
-                    .frame(width: size, height: size)
-                    .background(RadialGradient(colors: [Color(red: 0.98, green: 0.93, blue: 0.85), Color(red: 0.64, green: 0.45, blue: 0.27)], center: .center, startRadius: 0, endRadius: size / 2), in: Circle())
-                    .overlay(Circle().fill(Color(red: 0.98, green: 0.97, blue: 0.94)).padding(3))
-                    .overlay(Text(String(number).trimmingCharacters(in: .whitespaces)).font(.system(size: size * 0.4, weight: .black, design: .serif)).foregroundStyle(Color(red: 0.18, green: 0.15, blue: 0.14)))
-                    .overlay(Circle().stroke(Color.brown.opacity(0.5), style: StrokeStyle(lineWidth: 1, dash: [2, 2])).padding(3))
-                    .shadow(color: .brown.opacity(0.15), radius: 3, y: 2)
-                    .accessibilityLabel(String(number).trimmingCharacters(in: .whitespaces))
-            }
-        }
+        let label = String(line[..<colon]).trimmingCharacters(in: .whitespaces)
+        let theme = label.last?.asciiValue.map { Int($0) - 65 }
+        return LottoNumberRow(numbers: line[line.index(after: colon)...].split(separator: ",").compactMap { Int($0.trimmingCharacters(in: .whitespaces)) }, theme: theme)
     }
 }

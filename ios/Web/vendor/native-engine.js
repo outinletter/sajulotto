@@ -82,6 +82,20 @@
         return samePolarity ? '편인' : '정인';
     }
 
+    function mulberry32(a) {
+        return function() {
+          var t = a += 0x6D2B79F5; t = Math.imul(t ^ t >>> 15, t | 1);
+          t ^= t + Math.imul(t ^ t >>> 7, t | 61); return ((t ^ t >>> 14) >>> 0) / 4294967296;
+        }
+    }
+
+    function generateSeed(name, birth, time, dateStr) {
+        let str = name + birth + time + dateStr;
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) { hash = ((hash << 5) - hash) + str.charCodeAt(i); hash |= 0; }
+        return Math.abs(hash);
+    }
+
 
 function nativeChart(input) {
     const chart = SolarManager.chart(input, {getYearPillar,getMonthPillar,getDayPillar});
@@ -104,9 +118,30 @@ function nativeChart(input) {
         const relation = getBranchRelation(chart.dayPillar.branchIdx,p.branchIdx);
         const bonus = {'편재':25,'정재':25,'식신':18,'상관':18,'편인':10,'정인':10,'정관':12,'편관':5,'비견':8,'겁재':8};
         const score = 50+(bonus[tenGod]||0)+relation.score+[heavenlyStems[p.stemIdx],earthlyBranches[p.branchIdx]].reduce((sum,c)=>sum+(weakest.includes(getElementOfCharacter(c))?8:0),0);
-        return {day:weekDays[i],date:d.toISOString().slice(0,10),score,tenGod,relation:relation.label};
+        return {day:weekDays[i],date:d.toISOString().slice(0,10),score,tenGod,relation:relation.label,pillar:heavenlyStems[p.stemIdx]+earthlyBranches[p.branchIdx],reading:stemKorean[p.stemIdx]+branchKorean[p.branchIdx],elements:[getElementOfCharacter(heavenlyStems[p.stemIdx]),getElementOfCharacter(earthlyBranches[p.branchIdx])]};
     });
     const best = days.reduce((a,b)=>a.score>=b.score?a:b);
+    const selectedDate = best.date;
+    const dateParts = selectedDate.split('-').map(Number);
+    const selectedPillar = getDayPillar(...dateParts);
+    const preferredElements = [...new Set([getElementOfCharacter(heavenlyStems[selectedPillar.stemIdx]),getElementOfCharacter(earthlyBranches[selectedPillar.branchIdx])])];
+    const currentUserSeed = generateSeed('',JSON.stringify({year:input.year,month:input.month,day:input.day}),input.exactTime || input.timeVal,selectedDate+JSON.stringify(distribution)+JSON.stringify(selectedPillar));
     const limits = '오행은 표면 개수이며 월령·지장간 강도를 가중하지 않습니다. 용신·격국·대운·세운은 산출하지 않습니다. 주간 점수는 오락용 자체 비교 지표이며 확률이 아닙니다.';
-    return JSON.stringify({pillars,distribution,days,bestDay:best.day,basis:chart.basis,limits});
+    return JSON.stringify({pillars,distribution,days,bestDay:best.day,selectedDate,generation:{seed:currentUserSeed,preferredElements},basis:chart.basis,limits});
+}
+function nativeNumberSets(generation) {
+    const currentUserSeed = generation.seed;
+    const preferredElements = generation.preferredElements;
+    const createSet = (off) => {
+        const r = mulberry32(currentUserSeed + off); const s = new Set();
+        const elementCycle = ['water', 'fire', 'wood', 'metal', 'earth'];
+        while (s.size < 6) {
+            const candidates = Array.from({length:45},(_,i)=>i+1).filter(n=>!s.has(n));
+            const weights = candidates.map(n=>preferredElements.includes(elementCycle[(n-1)%5])?2:1);
+            let pick = r()*weights.reduce((a,b)=>a+b,0);
+            s.add(candidates[weights.findIndex(w=>(pick-=w)<0)]);
+        }
+        return Array.from(s).sort((a,b)=>a-b);
+    };
+    return JSON.stringify([77,88,99,111,222].map(createSet));
 }
